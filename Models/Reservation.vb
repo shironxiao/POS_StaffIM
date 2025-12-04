@@ -17,5 +17,6 @@ Public Class Reservation
     Public Property DeliveryAddress As String ' NEW: For catering deliveries
     Public Property DeliveryOption As String ' NEW: Pickup/Delivery
     Public Property TotalPrice As Decimal ' Calculated from reservation_items (not in DB schema)
+    Public Property PrepTime As Integer ' Total prep time in minutes (calculated from items)
     Public Property Items As New List(Of ReservationItem) ' NEW: List of items for this reservation
 End Class

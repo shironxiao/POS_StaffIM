@@ -3,32 +3,28 @@ Imports System.Collections.Generic
 Imports System.Threading.Tasks
 
 Public Class ProductRepository
-    ' Static cache for products (shared across all instances)
-    Private Shared cachedProducts As List(Of Product) = Nothing
-    Private Shared cacheTimestamp As DateTime = DateTime.MinValue
-    Private Shared ReadOnly cacheDuration As TimeSpan = TimeSpan.FromMinutes(5) ' Cache for 5 minutes
-    Private Shared ReadOnly cacheLock As New Object()
+    ' Cache keys
+    Private Const CACHE_KEY_PRODUCTS As String = "AllProducts"
+
 
     ''' <summary>
     ''' Gets all products with caching support
     ''' </summary>
+    ''' <summary>
+    ''' Gets all products with caching support
+    ''' </summary>
     Public Function GetAllProducts() As List(Of Product)
-        SyncLock cacheLock
-            ' Check if cache is valid
-            If cachedProducts IsNot Nothing AndAlso (DateTime.Now - cacheTimestamp) < cacheDuration Then
-                Return New List(Of Product)(cachedProducts) ' Return a copy
-            End If
-        End SyncLock
+        Dim products As List(Of Product) = DataCacheService.GetItem(Of List(Of Product))(CACHE_KEY_PRODUCTS)
+        
+        If products Is Nothing Then
+            ' Cache is invalid or empty, fetch from database
+            products = GetProducts("SELECT ProductID, ProductName, Category, Description, Price, Availability, ServingSize, ProductCode, PopularityTag, MealTime, OrderCount, Image, PrepTime FROM products WHERE Availability = 'Available' ORDER BY ProductName")
+            
+            ' Cache for 5 minutes
+            DataCacheService.SetItem(CACHE_KEY_PRODUCTS, products, 5)
+        End If
 
-        ' Cache is invalid, fetch from database
-        Dim products = GetProducts("SELECT ProductID, ProductName, Category, Description, Price, Availability, ServingSize, ProductCode, PopularityTag, MealTime, OrderCount, Image, PrepTime FROM products WHERE Availability = 'Available' ORDER BY ProductName")
-
-        ' Update cache
-        SyncLock cacheLock
-            cachedProducts = products
-            cacheTimestamp = DateTime.Now
-        End SyncLock
-
+        ' Return a copy to prevent external modification of cached list
         Return New List(Of Product)(products)
     End Function
 
@@ -64,11 +60,11 @@ Public Class ProductRepository
     ''' <summary>
     ''' Forces cache refresh (call when products are updated)
     ''' </summary>
+    ''' <summary>
+    ''' Forces cache refresh (call when products are updated)
+    ''' </summary>
     Public Sub RefreshCache()
-        SyncLock cacheLock
-            cachedProducts = Nothing
-            cacheTimestamp = DateTime.MinValue
-        End SyncLock
+        DataCacheService.Invalidate(CACHE_KEY_PRODUCTS)
     End Sub
 
     ''' <summary>
@@ -80,7 +76,7 @@ Public Class ProductRepository
 
     Private Function GetProducts(query As String, Optional parameters As MySqlParameter() = Nothing) As List(Of Product)
         Dim products As New List(Of Product)
-        Dim table As DataTable = Database.ExecuteQuery(query, parameters)
+        Dim table As DataTable = modDB.ExecuteQuery(query, parameters)
 
         If table IsNot Nothing Then
             For Each row As DataRow In table.Rows

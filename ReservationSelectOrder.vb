@@ -28,6 +28,9 @@ Public Class ReservationSelectOrder
         ' Initialize order items list
         orderItems = New List(Of OrderItem)
 
+        ' Refresh cache to ensure inventory status is up to date
+        productRepository.RefreshCache()
+
         ' Load products asynchronously
         Await LoadProductsAsync("All")
 
@@ -85,6 +88,10 @@ Public Class ReservationSelectOrder
             Else
                 products = productRepository.GetProductsByCategory(category)
             End If
+
+            ' Explicitly re-check inventory to ensure fresh status
+            Dim inventoryService As New InventoryService()
+            inventoryService.CheckInventoryForProducts(products)
 
             DisplayProducts(products)
         Catch ex As Exception
@@ -157,7 +164,8 @@ Public Class ReservationSelectOrder
             LoadImageAsync(pb, product.Image)
         End If
 
-        AddHandler pb.Click, Sub(sender, e) AddProductToOrder(product)
+        ' Handle click events - Use HandleProductClick wrapper
+        AddHandler pb.Click, Sub(sender, e) HandleProductClick(product)
 
         ' Name
         Dim lblName As New Label With {
@@ -186,15 +194,44 @@ Public Class ReservationSelectOrder
             .AutoSize = True
         }
 
+        ' Check inventory status
+        If Not product.HasSufficientInventory Then
+            panel.BackColor = Color.FromArgb(240, 240, 240) ' Light gray
+            lblPrice.ForeColor = Color.Gray
+
+            ' Add Out of Stock label
+            Dim lblStock As New Label With {
+                .Text = "OUT OF STOCK",
+                .ForeColor = Color.Red,
+                .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+                .Location = New Point(10, 160),
+                .AutoSize = True,
+                .BackColor = Color.Transparent
+            }
+            panel.Controls.Add(lblStock)
+
+            ' Disable cursor hand
+            pb.Cursor = Cursors.Default
+        End If
+
         panel.Controls.AddRange({pb, lblName, lblPrice, lblCat})
 
         ' Make entire panel clickable
-        AddHandler panel.Click, Sub(sender, e) AddProductToOrder(product)
-        AddHandler lblName.Click, Sub(sender, e) AddProductToOrder(product)
-        AddHandler lblPrice.Click, Sub(sender, e) AddProductToOrder(product)
+        AddHandler panel.Click, Sub(sender, e) HandleProductClick(product)
+        AddHandler lblName.Click, Sub(sender, e) HandleProductClick(product)
+        AddHandler lblPrice.Click, Sub(sender, e) HandleProductClick(product)
 
         Return panel
     End Function
+
+    Private Sub HandleProductClick(product As Product)
+        If Not product.HasSufficientInventory Then
+            MessageBox.Show("This product cannot be selected due to insufficient inventory." & vbCrLf & "See @Inventory_alerts.sql for details.", "Out of Stock", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        AddProductToOrder(product)
+    End Sub
 
     ''' <summary>
     ''' Loads image in background thread to avoid UI freeze
@@ -457,7 +494,7 @@ Public Class ReservationSelectOrder
         btnDineIn.BackColor = Color.WhiteSmoke
     End Sub
 
-    Private Sub btnCheckout_Click(sender As Object, e As EventArgs) Handles btnCheckout.Click
+    Private Sub btnCheckout_Click(sender As Object, e As EventArgs) Handles btnContinue.Click
         If orderItems.Count = 0 Then
             MessageBox.Show("Please add items to the reservation order.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return

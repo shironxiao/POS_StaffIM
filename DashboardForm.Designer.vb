@@ -39,10 +39,6 @@ Partial Class DashboardForm
         lblCardTimeCaption = New Label()
         lblCardTimeValue = New Label()
         lblCardTimeTitle = New Label()
-        pnlCardFeedback = New Panel()
-        lblCardFeedbackCaption = New Label()
-        lblCardFeedbackValue = New Label()
-        lblCardFeedbackTitle = New Label()
         tlpBottom = New TableLayoutPanel()
         pnlActiveOrders = New Panel()
         pnlActiveOrdersPlaceholder = New Panel()
@@ -60,7 +56,6 @@ Partial Class DashboardForm
         pnlCardOrders.SuspendLayout()
         pnlCardReservations.SuspendLayout()
         pnlCardTime.SuspendLayout()
-        pnlCardFeedback.SuspendLayout()
         tlpBottom.SuspendLayout()
         pnlActiveOrders.SuspendLayout()
         pnlActiveOrdersPlaceholder.SuspendLayout()
@@ -133,7 +128,6 @@ Partial Class DashboardForm
         tlpCards.Controls.Add(pnlCardOrders, 0, 0)
         tlpCards.Controls.Add(pnlCardReservations, 1, 0)
         tlpCards.Controls.Add(pnlCardTime, 2, 0)
-        tlpCards.Controls.Add(pnlCardFeedback, 3, 0)
         tlpCards.Dock = DockStyle.Fill
         tlpCards.Location = New Point(24, 108)
         tlpCards.Margin = New Padding(0, 0, 0, 24)
@@ -286,54 +280,6 @@ Partial Class DashboardForm
         lblCardTimeTitle.Size = New Size(167, 25)
         lblCardTimeTitle.TabIndex = 0
         lblCardTimeTitle.Text = "Time In/Time Out"
-        ' 
-        ' pnlCardFeedback
-        ' 
-        pnlCardFeedback.BackColor = Color.FromArgb(CByte(251), CByte(239), CByte(236))
-        pnlCardFeedback.BorderStyle = BorderStyle.FixedSingle
-        pnlCardFeedback.Controls.Add(lblCardFeedbackCaption)
-        pnlCardFeedback.Controls.Add(lblCardFeedbackValue)
-        pnlCardFeedback.Controls.Add(lblCardFeedbackTitle)
-        pnlCardFeedback.Dock = DockStyle.Fill
-        pnlCardFeedback.Location = New Point(804, 0)
-        pnlCardFeedback.Margin = New Padding(0)
-        pnlCardFeedback.Name = "pnlCardFeedback"
-        pnlCardFeedback.Padding = New Padding(16)
-        pnlCardFeedback.Size = New Size(268, 144)
-        pnlCardFeedback.TabIndex = 3
-        ' 
-        ' lblCardFeedbackCaption
-        ' 
-        lblCardFeedbackCaption.AutoSize = True
-        lblCardFeedbackCaption.Font = New Font("Segoe UI", 9F)
-        lblCardFeedbackCaption.ForeColor = Color.FromArgb(CByte(85), CByte(85), CByte(85))
-        lblCardFeedbackCaption.Location = New Point(16, 108)
-        lblCardFeedbackCaption.Name = "lblCardFeedbackCaption"
-        lblCardFeedbackCaption.Size = New Size(92, 20)
-        lblCardFeedbackCaption.TabIndex = 2
-        lblCardFeedbackCaption.Text = "New reviews"
-        ' 
-        ' lblCardFeedbackValue
-        ' 
-        lblCardFeedbackValue.AutoSize = True
-        lblCardFeedbackValue.Font = New Font("Segoe UI", 18F, FontStyle.Bold)
-        lblCardFeedbackValue.ForeColor = Color.Black
-        lblCardFeedbackValue.Location = New Point(16, 62)
-        lblCardFeedbackValue.Name = "lblCardFeedbackValue"
-        lblCardFeedbackValue.Size = New Size(35, 41)
-        lblCardFeedbackValue.TabIndex = 1
-        lblCardFeedbackValue.Text = "3"
-        ' 
-        ' lblCardFeedbackTitle
-        ' 
-        lblCardFeedbackTitle.AutoSize = True
-        lblCardFeedbackTitle.Font = New Font("Segoe UI", 11F, FontStyle.Bold)
-        lblCardFeedbackTitle.ForeColor = Color.Black
-        lblCardFeedbackTitle.Location = New Point(16, 16)
-        lblCardFeedbackTitle.Name = "lblCardFeedbackTitle"
-        lblCardFeedbackTitle.Size = New Size(96, 25)
-        lblCardFeedbackTitle.TabIndex = 0
-        lblCardFeedbackTitle.Text = "Feedback"
         ' 
         ' tlpBottom
         ' 
@@ -506,8 +452,6 @@ Partial Class DashboardForm
         pnlCardReservations.PerformLayout()
         pnlCardTime.ResumeLayout(False)
         pnlCardTime.PerformLayout()
-        pnlCardFeedback.ResumeLayout(False)
-        pnlCardFeedback.PerformLayout()
         tlpBottom.ResumeLayout(False)
         pnlActiveOrders.ResumeLayout(False)
         pnlActiveOrders.PerformLayout()
@@ -537,10 +481,6 @@ Partial Class DashboardForm
     Friend WithEvents lblCardTimeCaption As Label
     Friend WithEvents lblCardTimeValue As Label
     Friend WithEvents lblCardTimeTitle As Label
-    Friend WithEvents pnlCardFeedback As Panel
-    Friend WithEvents lblCardFeedbackCaption As Label
-    Friend WithEvents lblCardFeedbackValue As Label
-    Friend WithEvents lblCardFeedbackTitle As Label
     Friend WithEvents tlpBottom As TableLayoutPanel
     Friend WithEvents pnlActiveOrders As Panel
     Friend WithEvents pnlActiveOrdersPlaceholder As Panel

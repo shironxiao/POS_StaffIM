@@ -18,7 +18,7 @@ Public Class UserRepository
                 New MySqlParameter("@EmployeeID", employeeID)
             }
 
-            Dim table As DataTable = Database.ExecuteQuery(query, parameters)
+            Dim table As DataTable = modDB.ExecuteQuery(query, parameters)
 
             If table IsNot Nothing AndAlso table.Rows.Count > 0 Then
                 Dim row As DataRow = table.Rows(0)

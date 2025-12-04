@@ -59,7 +59,7 @@ Public Class NewReservationForm
             Dim lastName = If(nameParts.Length > 1, String.Join(" ", nameParts.Skip(1)), "")
 
             ' Pass empty string for email
-            Dim customerID = Database.GetOrCreateCustomer(firstName, lastName, "", txtPhone.Text.Trim)
+            Dim customerID = modDB.GetOrCreateCustomer(firstName, lastName, "", txtPhone.Text.Trim)
 
             Dim reservation As New Reservation With {
                 .CustomerID = customerID,

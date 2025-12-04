@@ -1,18 +1,16 @@
-Imports System.Collections.Generic
-Imports System.Reflection
-Imports System.Threading.Tasks
+﻿Imports System.Collections.Generic
 Imports System.Text
 
-Public Class ReservationsForm
-    Private reservationRepository As New ReservationRepository()
-    Private isLoading As Boolean = False
-    
+Public Class OnlineOrdersForm
+    Private orderRepository As New OrderRepository()
+    Private cmbFilterStatus As ComboBox
+
     ' Pagination variables
     Private currentPage As Integer = 1
     Private pageSize As Integer = 100 ' Updated to 100
     Private totalPages As Integer = 1
     Private totalRecords As Integer = 0
-    
+
     ' Pagination controls
     Private pnlPagination As Panel
     Private btnPrevPage As Button
@@ -20,18 +18,20 @@ Public Class ReservationsForm
     Private txtPageNumber As TextBox
     Private lblTotalPages As Label
 
-    Private Async Sub ReservationsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        ' Enable double buffering for smoother scrolling
-        GetType(Control).GetProperty("DoubleBuffered", BindingFlags.NonPublic Or BindingFlags.Instance).SetValue(Panel1, True, Nothing)
-
+    ''' <summary>
+    ''' Loads online orders when form loads
+    ''' </summary>
+    Private Sub OnlineOrdersForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Hide the template
         ResTemplate.Visible = False
-        
+
         ' Initialize pagination controls
         InitializePaginationControls()
-        
-        ' Load asynchronously
-        Await LoadReservationsAsync()
+
+        ' Create and add filter ComboBox
+        CreateFilterComboBox()
+
+        LoadOnlineOrders()
     End Sub
 
     Private Sub InitializePaginationControls()
@@ -41,7 +41,7 @@ Public Class ReservationsForm
             .Dock = DockStyle.Bottom,
             .BackColor = Color.WhiteSmoke
         }
-        
+
         ' Previous Button
         btnPrevPage = New Button With {
             .Text = "< Previous",
@@ -52,7 +52,7 @@ Public Class ReservationsForm
             .Font = New Font("Segoe UI", 9)
         }
         AddHandler btnPrevPage.Click, AddressOf btnPrevPage_Click
-        
+
         ' Next Button
         btnNextPage = New Button With {
             .Text = "Next >",
@@ -63,7 +63,7 @@ Public Class ReservationsForm
             .Font = New Font("Segoe UI", 9)
         }
         AddHandler btnNextPage.Click, AddressOf btnNextPage_Click
-        
+
         ' Page Number TextBox (Editable)
         txtPageNumber = New TextBox With {
             .Text = "1",
@@ -84,52 +84,69 @@ Public Class ReservationsForm
             .Font = New Font("Segoe UI", 10, FontStyle.Bold),
             .Location = New Point(txtPageNumber.Right + 5, 8)
         }
-        
+
         ' Add Resize Handler to keep buttons in place
         AddHandler pnlPagination.Resize, Sub(s, ev)
                                              btnNextPage.Location = New Point(pnlPagination.Width - 120, 8)
                                              txtPageNumber.Location = New Point((pnlPagination.Width - 120) \ 2, 8)
                                              lblTotalPages.Location = New Point(txtPageNumber.Right + 5, 8)
                                          End Sub
-        
+
         pnlPagination.Controls.AddRange({btnPrevPage, btnNextPage, txtPageNumber, lblTotalPages})
         Me.Controls.Add(pnlPagination)
         pnlPagination.BringToFront()
-        
+
         ' Adjust Panel1 to not overlap with pagination
         Panel1.Height -= pnlPagination.Height
     End Sub
 
-    Private Async Function LoadReservationsAsync() As Task
-        If isLoading Then Return
-        isLoading = True
-        
-        Try
-            Dim reservations As List(Of Reservation) = Nothing
+    ''' <summary>
+    ''' Creates the filter ComboBox
+    ''' </summary>
+    Private Sub CreateFilterComboBox()
+        cmbFilterStatus = New ComboBox With {
+            .Location = New Point(1100, 38),
+            .Size = New Size(200, 30),
+            .DropDownStyle = ComboBoxStyle.DropDownList,
+            .Font = New Font("Segoe UI", 10)
+        }
 
-            ' Run DB operations on background thread
-            Await Task.Run(Sub()
-                               ' Calculate offset
-                               Dim offset As Integer = (currentPage - 1) * pageSize
-            
-                               ' Fetch total count first
-                               totalRecords = reservationRepository.GetTotalReservationsCount()
-                               totalPages = Math.Max(1, CInt(Math.Ceiling(totalRecords / pageSize)))
-            
-                               ' Fetch paged data
-                               reservations = reservationRepository.GetAllReservationsPaged(pageSize, offset)
-                           End Sub)
-            
+        cmbFilterStatus.Items.AddRange({"All Orders", "Preparing", "Served", "Completed", "Cancelled"})
+        cmbFilterStatus.SelectedIndex = 0
+
+        AddHandler cmbFilterStatus.SelectedIndexChanged, AddressOf cmbFilterStatus_SelectedIndexChanged
+
+        Panel1.Controls.Add(cmbFilterStatus)
+    End Sub
+
+    ''' <summary>
+    ''' Loads all online orders from the database and displays them
+    ''' </summary>
+    Private Sub LoadOnlineOrders()
+        Try
+            Dim selectedStatus As String = "All Orders"
+            If cmbFilterStatus.SelectedItem IsNot Nothing Then
+                selectedStatus = cmbFilterStatus.SelectedItem.ToString()
+            End If
+
+            ' Calculate offset
+            Dim offset As Integer = (currentPage - 1) * pageSize
+
+            ' Fetch total count first
+            totalRecords = orderRepository.GetTotalOnlineOrdersCount(selectedStatus)
+            totalPages = Math.Max(1, CInt(Math.Ceiling(totalRecords / pageSize)))
+
+            ' Fetch paged data
+            Dim onlineOrders As List(Of OnlineOrder) = orderRepository.GetOnlineOrdersPaged(pageSize, offset, selectedStatus)
+
             ' Update UI
-            DisplayReservations(reservations)
+            DisplayOnlineOrders(onlineOrders)
             UpdatePaginationControls()
-            
+
         Catch ex As Exception
-            MessageBox.Show($"Error loading reservations: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        Finally
-            isLoading = False
+            MessageBox.Show($"Error loading online orders: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
-    End Function
+    End Sub
 
     Private Sub UpdatePaginationControls()
         If txtPageNumber IsNot Nothing Then
@@ -149,7 +166,7 @@ Public Class ReservationsForm
         End If
     End Sub
 
-    Private Async Sub ValidateAndJumpToPage()
+    Private Sub ValidateAndJumpToPage()
         Dim newPage As Integer
         If Integer.TryParse(txtPageNumber.Text, newPage) Then
             If newPage < 1 Then newPage = 1
@@ -157,7 +174,7 @@ Public Class ReservationsForm
             
             If newPage <> currentPage Then
                 currentPage = newPage
-                Await LoadReservationsAsync()
+                LoadOnlineOrders()
             Else
                 txtPageNumber.Text = currentPage.ToString()
             End If
@@ -165,31 +182,32 @@ Public Class ReservationsForm
             txtPageNumber.Text = currentPage.ToString()
         End If
     End Sub
-    
-    Private Async Sub btnPrevPage_Click(sender As Object, e As EventArgs)
+
+    Private Sub btnPrevPage_Click(sender As Object, e As EventArgs)
         If currentPage > 1 Then
             currentPage -= 1
-            Await LoadReservationsAsync()
+            LoadOnlineOrders()
         End If
     End Sub
 
-    Private Async Sub btnNextPage_Click(sender As Object, e As EventArgs)
+    Private Sub btnNextPage_Click(sender As Object, e As EventArgs)
         If currentPage < totalPages Then
             currentPage += 1
-            Await LoadReservationsAsync()
+            LoadOnlineOrders()
         End If
     End Sub
 
-    Private Async Sub LoadReservations()
-        ' Legacy method kept for compatibility if needed, but redirects to async
-        Await LoadReservationsAsync()
-    End Sub
-
-    Private Sub DisplayReservations(reservations As List(Of Reservation))
-        ' Keep the header controls (Button, PictureBox) and remove reservation panels
+    ''' <summary>
+    ''' Displays online orders using card templates
+    ''' </summary>
+    ''' <summary>
+    ''' Displays online orders using card templates
+    ''' </summary>
+    Private Sub DisplayOnlineOrders(orders As List(Of OnlineOrder))
+        ' Keep the template and other non-panel controls
         Dim controlsKeep As New List(Of Control)
         For Each ctrl As Control In Panel1.Controls
-            If ctrl Is btnNewReservation OrElse ctrl Is PictureBox1 OrElse ctrl Is ResTemplate OrElse ctrl Is btnRefresh Then
+            If ctrl Is ResTemplate OrElse ctrl Is btnRefresh OrElse ctrl Is cmbFilterStatus Then
                 controlsKeep.Add(ctrl)
             End If
         Next
@@ -201,28 +219,45 @@ Public Class ReservationsForm
             Panel1.Controls.Add(ctrl)
         Next
 
+        If orders.Count = 0 Then
+            Dim lblEmpty As New Label With {
+                .Text = "No online orders found",
+                .Font = New Font("Segoe UI", 14, FontStyle.Italic),
+                .ForeColor = Color.Gray,
+                .Location = New Point(600, 300),
+                .AutoSize = True
+            }
+            Panel1.Controls.Add(lblEmpty)
+            Return
+        End If
+
+        ' Create cards for each order
         Dim xPos As Integer = 38
         Dim yPos As Integer = 119
-        Dim colCount As Integer = 0
-        Dim maxCols As Integer = 3 ' Adjust based on screen width
+        Dim cardsPerRow As Integer = 3
+        Dim cardCount As Integer = 0
 
-        For Each res As Reservation In reservations
-            Dim panel As Panel = CreateReservationPanel(res)
-            panel.Location = New Point(xPos, yPos)
-            Panel1.Controls.Add(panel)
+        For Each order In orders
+            Dim orderCard As Panel = CreateOrderCard(order)
+            orderCard.Location = New Point(xPos, yPos)
+            Panel1.Controls.Add(orderCard)
 
-            colCount += 1
-            If colCount >= maxCols Then
-                colCount = 0
+            cardCount += 1
+            If cardCount Mod cardsPerRow = 0 Then
+                ' Move to next row
                 xPos = 38
-                yPos += 370 ' Height + Margin
+                yPos += 330
             Else
-                xPos += 455 ' Width + Margin
+                ' Move to next column
+                xPos += 450
             End If
         Next
     End Sub
 
-    Private Function CreateReservationPanel(res As Reservation) As Panel
+    ''' <summary>
+    ''' Creates an order card from the template
+    ''' </summary>
+    Private Function CreateOrderCard(order As OnlineOrder) As Panel
         ' Clone the ResTemplate panel
         Dim panel As New Panel With {
             .Size = ResTemplate.Size,
@@ -230,91 +265,60 @@ Public Class ReservationsForm
             .BorderStyle = ResTemplate.BorderStyle
         }
 
-        ' Clone and populate labels from template
+        ' Clone controls using helper methods
         Dim lblName As Label = CloneLabel(lblName2)
-        ' Show FullName if available, otherwise show CustomerName from customers table
-        lblName.Text = If(String.IsNullOrEmpty(res.FullName), res.CustomerName, res.FullName)
+        lblName.Text = order.CustomerName
 
         Dim lblCode As Label = CloneLabel(lblCode2)
-        lblCode.Text = $"RES-{res.ReservationID:D3}"
+        lblCode.Text = $"ORD-{order.OrderID:D4}"
 
-        ' Clone email label from template
-        Dim lblEmailClone As Label = CloneLabel(Me.lblEmail)
-        lblEmailClone.Text = If(String.IsNullOrEmpty(res.CustomerEmail), "N/A", res.CustomerEmail)
+        Dim lblEmailClone As Label = CloneLabel(lblEmail)
+        lblEmailClone.Text = If(String.IsNullOrEmpty(order.Email), "No email", order.Email)
 
         Dim lblPhone As Label = CloneLabel(lblPhone2)
-        lblPhone.Text = If(String.IsNullOrEmpty(res.ContactNumber), "N/A", res.ContactNumber)
-
-        Dim lblPeople As Label = CloneLabel(lblPeople2)
-        lblPeople.Text = res.NumberOfGuests.ToString()
+        lblPhone.Text = If(String.IsNullOrEmpty(order.ContactNumber), "No phone", order.ContactNumber)
 
         Dim lblDate As Label = CloneLabel(lblDate2)
-        lblDate.Text = res.EventDate.ToString("yyyy-MM-dd")
+        lblDate.Text = order.OrderDate.ToString("MMM dd, yyyy")
 
         Dim lblTime As Label = CloneLabel(lblTime2)
-        lblTime.Text = DateTime.Today.Add(res.EventTime).ToString("h:mm tt")
+        lblTime.Text = DateTime.Today.Add(order.OrderTime).ToString("h:mm tt")
 
-        Dim lblEvent As Label = CloneLabel(lblEvent2)
-        lblEvent.Text = res.EventType
-
-        ' Clone status button
+        ' Status Button (Button2 in template)
         Dim btnStatus As Button = CloneButton(Button2)
-        btnStatus.Text = res.ReservationStatus
-
-        ' Set status color - Confirmed and Accepted both show green
-        If res.ReservationStatus = "Confirmed" OrElse res.ReservationStatus = "Accepted" Then
-            btnStatus.ForeColor = Color.FromArgb(0, 200, 83)
-        ElseIf res.ReservationStatus = "Pending" Then
-            btnStatus.ForeColor = Color.Orange
-        Else
-            btnStatus.ForeColor = Color.Red
-        End If
-
-        ' Clone icons
+        btnStatus.Text = order.OrderStatus
+        btnStatus.BackColor = GetStatusColor(order.OrderStatus)
+        btnStatus.ForeColor = Color.White
+        
+        ' Icons
         Dim iconEmail As PictureBox = ClonePictureBox(PictureBox8)
         Dim iconPhone As PictureBox = ClonePictureBox(PictureBox3)
-        Dim iconPeople As PictureBox = ClonePictureBox(PictureBox4)
         Dim iconDate As PictureBox = ClonePictureBox(PictureBox5)
         Dim iconTime As PictureBox = ClonePictureBox(PictureBox6)
-        Dim iconEvent As PictureBox = ClonePictureBox(PictureBox7)
 
-        ' Add all controls to panel
-        panel.Controls.AddRange({
-            lblName, lblCode, lblEmailClone, iconEmail, lblPhone, iconPhone,
-            lblPeople, iconPeople, lblDate, iconDate, lblTime, iconTime,
-            lblEvent, iconEvent, btnStatus
-        })
+        ' View Details Button (Button1 in template)
+        Dim btnView As Button = CloneButton(Button1)
+        btnView.Text = "View Details"
+        AddHandler btnView.Click, Sub(s, ev) ShowOrderDetails(order)
 
-        ' Add View Order button for all reservations
-        Dim btnViewOrder As Button = CloneButton(Button1)
-        btnViewOrder.Text = "View Order"
-        btnViewOrder.BackColor = Color.FromArgb(52, 152, 219) ' Blue color
-        AddHandler btnViewOrder.Click, Sub(sender, e)
-                                           ShowReservationItems(res)
-                                       End Sub
-        panel.Controls.Add(btnViewOrder)
-
-        ' Add Receipt Preview button (New Feature)
-        ' We create this programmatically since it might not be in the template yet
-        Dim btnPreview As Button = CloneButton(Button1) ' Clone View Order button style
+        ' Receipt Preview Button (Button3 in template)
+        Dim btnPreview As Button = CloneButton(Button3)
         btnPreview.Text = "Receipt Preview"
-        btnPreview.BackColor = Color.FromArgb(224, 224, 224)
-        btnPreview.ForeColor = Color.Black
-        btnPreview.Location = New Point(178, 285) ' Position it next to View Order
-        btnPreview.Size = New Size(104, 38)
-        
-        AddHandler btnPreview.Click, Sub(sender, e)
-                                         ShowReceiptPreview(res)
-                                     End Sub
-        panel.Controls.Add(btnPreview)
+        AddHandler btnPreview.Click, Sub(s, ev) ShowReceiptPreview(order)
+
+        ' Add controls to panel
+        panel.Controls.AddRange({
+            lblName, lblCode, iconEmail, lblEmailClone, iconPhone, lblPhone,
+            iconDate, lblDate, iconTime, lblTime, btnStatus, btnView, btnPreview
+        })
 
         Return panel
     End Function
 
-    Private Sub ShowReceiptPreview(res As Reservation)
+    Private Sub ShowReceiptPreview(order As OnlineOrder)
         Try
             ' Get items for the receipt
-            Dim items As List(Of ReservationItem) = reservationRepository.GetReservationItems(res.ReservationID)
+            Dim items As List(Of OrderItem) = orderRepository.GetOrderItems(order.OrderID)
             
             ' Generate text content matching the image format
             Dim sb As New StringBuilder()
@@ -328,12 +332,10 @@ Public Class ReservationsForm
             sb.AppendLine(dblLine)
             sb.AppendLine()
             
-            sb.AppendLine($"Order No.:   RES-{res.ReservationID:D3}")
-            ' Use Event Date/Time or current datestamp? Usually a receipt has the print date. 
-            ' But keeping Event info is useful. Let's stick to the image style: Date | Time
+            sb.AppendLine($"Order No.:   ORD-{order.OrderID:D4}")
             sb.AppendLine($"Date:        {DateTime.Now:yyyy-MM-dd}   |   Time: {DateTime.Now:HH:mm tt}")
-            sb.AppendLine($"Cashier:     Reservation System")
-            sb.AppendLine($"Customer:    {res.CustomerName}")
+            sb.AppendLine($"Cashier:     Online System")
+            sb.AppendLine($"Customer:    {order.CustomerName}")
             sb.AppendLine()
             
             sb.AppendLine(line)
@@ -357,7 +359,7 @@ Public Class ReservationsForm
                 
                 sb.AppendLine($"{itemStr}{New String(" "c, padding)}{priceStr}")
                 
-                 ' Add fake batch info to match image style
+                ' Add fake batch info to match image style (optional, but requested to look like image)
                 sb.AppendLine($"   - Batch: N/A") 
                 sb.AppendLine($"   - Qty Deducted: {item.Quantity}")
                 sb.AppendLine()
@@ -373,18 +375,17 @@ Public Class ReservationsForm
             sb.AppendLine(line)
             sb.AppendLine()
             
-            ' Reservation specific footer info
-            sb.AppendLine($"Payment Method: {res.ReservationStatus.ToUpper()}")
-            sb.AppendLine($"Amount Given:   P {totalAmount:N2}") 
+            sb.AppendLine("Payment Method: ONLINE/PENDING")
+            sb.AppendLine($"Amount Given:   P {totalAmount:N2}") ' Assuming exact payment for online
             sb.AppendLine($"Change:         P 0.00")
             sb.AppendLine()
             sb.AppendLine(line)
             sb.AppendLine()
-            sb.AppendLine(CenterText("THANK YOU FOR YOUR BOOKING!", w))
+            sb.AppendLine(CenterText("THANK YOU FOR YOUR PURCHASE!", w))
             sb.AppendLine(dblLine)
             
             ' Show Preview Form
-            Dim previewForm As New ReceiptPreviewForm(res.ReservationID, "Reservation", sb.ToString())
+            Dim previewForm As New ReceiptPreviewForm(order.OrderID, "OnlineOrder", sb.ToString())
             previewForm.ShowDialog()
             
         Catch ex As Exception
@@ -398,28 +399,7 @@ Public Class ReservationsForm
         Return New String(" "c, leftPadding) & text
     End Function
 
-    Private Sub ShowReservationItems(reservation As Reservation)
-        Try
-            ' Fetch reservation items from database
-            Dim items As List(Of ReservationItem) = reservationRepository.GetReservationItems(reservation.ReservationID)
-
-            If items Is Nothing OrElse items.Count = 0 Then
-                MessageBox.Show("No items found for this reservation.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Return
-            End If
-
-            ' Show popup form with items
-            Dim viewForm As New ViewReservationItemsForm(
-                reservation.ReservationID,
-                $"RES-{reservation.ReservationID:D3}",
-                items
-            )
-            viewForm.ShowDialog()
-        Catch ex As Exception
-            MessageBox.Show($"Error loading reservation items: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-    End Sub
-
+    ' Helper methods for cloning controls
     Private Function CloneLabel(template As Label) As Label
         Return New Label With {
             .Text = template.Text,
@@ -454,19 +434,81 @@ Public Class ReservationsForm
         }
     End Function
 
-    Private Async Sub btnNewReservation_Click(sender As Object, e As EventArgs) Handles btnNewReservation.Click
-        Dim newResForm As New NewReservationForm()
-        If newResForm.ShowDialog() = DialogResult.OK Then
-            Await LoadReservationsAsync()
-        End If
+    ''' <summary>
+    ''' Returns color based on order status
+    ''' </summary>
+    Private Function GetStatusColor(status As String) As Color
+        Select Case status.ToLower()
+            Case "preparing"
+                Return Color.FromArgb(255, 127, 39) ' Orange
+            Case "served"
+                Return Color.FromArgb(40, 167, 69) ' Green
+            Case "completed"
+                Return Color.FromArgb(40, 167, 69) ' Green
+            Case "cancelled"
+                Return Color.FromArgb(220, 53, 69) ' Red
+            Case Else
+                Return Color.Gray
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' Shows order details and actions
+    ''' </summary>
+    Private Sub ShowOrderDetails(order As OnlineOrder)
+        Try
+            ' Load order items from database
+            Dim items As List(Of OrderItem) = orderRepository.GetOrderItems(order.OrderID)
+
+            ' Show the order items form
+            Dim viewForm As New ViewOnlineOrderItemsForm(
+                order.OrderID,
+                $"ORD-{order.OrderID:D4}",
+                order.CustomerName,
+                items,
+                order.TotalAmount
+            )
+            viewForm.ShowDialog()
+
+        Catch ex As Exception
+            MessageBox.Show($"Error loading order items: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
-    Private Async Sub btnRefresh_Click(sender As Object, e As EventArgs) Handles btnRefresh.Click
-        currentPage = 1 ' Reset to first page on refresh
-        Await LoadReservationsAsync()
+    ''' <summary>
+    ''' Updates order status in the database
+    ''' </summary>
+    Private Sub UpdateOrderStatus(orderID As Integer, newStatus As String)
+        Try
+            orderRepository.UpdateOrderStatus(orderID, newStatus)
+            MessageBox.Show($"Order #{orderID} status updated to {newStatus}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            LoadOnlineOrders() ' Refresh the list
+        Catch ex As Exception
+            MessageBox.Show($"Error updating order status: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
-    Private Sub lblTime2_Click(sender As Object, e As EventArgs) Handles lblTime2.Click
+    ''' <summary>
+    ''' Refresh button click handler
+    ''' </summary>
+    Private Sub btnRefresh_Click(sender As Object, e As EventArgs) Handles btnRefresh.Click
+        currentPage = 1
+        LoadOnlineOrders()
+    End Sub
+
+    ''' <summary>
+    ''' Filter by status
+    ''' </summary>
+    Private Sub cmbFilterStatus_SelectedIndexChanged(sender As Object, e As EventArgs)
+        currentPage = 1
+        LoadOnlineOrders()
+    End Sub
+
+    Private Sub FilterOrdersByStatus(status As String)
+        ' Legacy method removed - replaced by DB filtering in LoadOnlineOrders
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
 
     End Sub
 End Class

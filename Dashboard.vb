@@ -29,7 +29,13 @@ Public Class Dashboard
     Private Sub btnReports_Click(sender As Object, e As EventArgs) Handles btnReports.Click
         SetActiveButton(btnReports)
         lblHeaderTitle.Text = "Reports"
-        LoadForm(New ReportsForm())
+        LoadForm(New ReportsForm)
+    End Sub
+
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        SetActiveButton(Button1)
+        lblHeaderTitle.Text = "Online Orders"
+        LoadForm(New OnlineOrdersForm())
     End Sub
 
     Private Sub SetActiveButton(activeButton As Button)

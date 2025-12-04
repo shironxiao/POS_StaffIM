@@ -1,23 +1,156 @@
 Imports MySql.Data.MySqlClient
 Imports System.Data
 
-''' <summary>
-''' Database connection and operation class for MySQL database
-''' Provides reusable methods for executing queries, non-queries, and scalar operations
-''' </summary>
-Public Class Database
-    ' Connection string constants - modify these if your database settings differ
-    Private Const SERVER As String = "localhost"
-    Private Const USERNAME As String = "root"
-    Private Const PASSWORD As String = ""
-    Private Const DATABASE As String = "tabeya_system"
-    Private Const PORT As String = "3306"
+Public Class modDB
+    ' Dynamic connection string - loaded from config.json
+    Private Shared _connectionString As String = Nothing
+    Private Shared _currentConfig As DatabaseConfig = Nothing
 
-    ' Global connection string - used for all database operations
-    Public Shared ReadOnly ConnectionString As String = String.Format(
-        "Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8mb4;",
-        SERVER, PORT, DATABASE, USERNAME, PASSWORD
-    )
+    ''' <summary>
+    ''' Gets the current connection string from config.json
+    ''' Falls back to default localhost settings if config doesn't exist
+    ''' </summary>
+    Public Shared ReadOnly Property ConnectionString As String
+        Get
+            If _connectionString Is Nothing Then
+                LoadConnectionString()
+            End If
+            Return _connectionString
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Loads connection string from config.json
+    ''' </summary>
+    Private Shared Sub LoadConnectionString()
+        _currentConfig = ConfigManager.LoadConfig()
+
+        If _currentConfig IsNot Nothing AndAlso _currentConfig.IsValid() Then
+            _connectionString = BuildConnectionString(_currentConfig)
+        Else
+            ' Fallback to default localhost settings for backward compatibility
+            _connectionString = "Server=localhost;Port=3306;Database=tabeya_system;Uid=root;Pwd=;CharSet=utf8mb4;"
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Builds a MySQL connection string from DatabaseConfig
+    ''' </summary>
+    ''' <param name="config">Database configuration object</param>
+    ''' <returns>MySQL connection string</returns>
+    Public Shared Function BuildConnectionString(config As DatabaseConfig) As String
+        Return BuildConnectionString(config.ServerIP, config)
+    End Function
+
+    ''' <summary>
+    ''' Builds a MySQL connection string with a specific server IP (for fallback)
+    ''' </summary>
+    ''' <param name="serverIP">Server IP to use</param>
+    ''' <param name="config">Database configuration object</param>
+    ''' <returns>MySQL connection string</returns>
+    Public Shared Function BuildConnectionString(serverIP As String, config As DatabaseConfig) As String
+        Return String.Format(
+            "Server={0};Port={1};Database={2};Uid={3};Pwd={4};CharSet=utf8mb4;Connection Timeout=5;",
+            serverIP, config.Port, config.DatabaseName, config.Username, config.Password
+        )
+    End Function
+
+    ''' <summary>
+    ''' Reloads the connection string from config.json
+    ''' Call this after saving new configuration
+    ''' </summary>
+    Public Shared Sub ReloadConnectionString()
+        _connectionString = Nothing
+        _currentConfig = Nothing
+        LoadConnectionString()
+    End Sub
+
+    ''' <summary>
+    ''' Tests database connection with a specific configuration without saving it
+    ''' </summary>
+    ''' <param name="config">Configuration to test</param>
+    ''' <param name="errorMessage">Output parameter containing error details if connection fails</param>
+    ''' <returns>True if connection successful, False otherwise</returns>
+    Public Shared Function TestConnectionWithConfig(config As DatabaseConfig, ByRef errorMessage As String) As Boolean
+        If config Is Nothing Then
+            errorMessage = "Configuration is null"
+            Return False
+        End If
+
+        If Not config.IsValid() Then
+            errorMessage = "Configuration is invalid. Please fill all required fields."
+            Return False
+        End If
+
+        Dim testConnectionString As String = BuildConnectionString(config)
+
+        Try
+            Using connection As New MySqlConnection(testConnectionString)
+                connection.Open()
+                errorMessage = "Connection successful!"
+                Return True
+            End Using
+        Catch ex As MySqlException
+            ' Provide user-friendly error messages based on MySQL error codes
+            Select Case ex.Number
+                Case 0
+                    errorMessage = "Cannot connect to server. Please check the server IP address."
+                Case 1042
+                    errorMessage = "Unable to connect to server. Server may be offline or IP address is incorrect."
+                Case 1045
+                    errorMessage = "Access denied. Please check your username and password."
+                Case 1049
+                    errorMessage = $"Unknown database '{config.DatabaseName}'. Please verify the database name."
+                Case Else
+                    errorMessage = $"MySQL Error ({ex.Number}): {ex.Message}"
+            End Select
+            Return False
+        Catch ex As Exception
+            errorMessage = $"Connection error: {ex.Message}"
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Tests connection with primary server, automatically falls back to backup if primary fails
+    ''' </summary>
+    ''' <param name="config">Configuration to test</param>
+    ''' <param name="usedBackup">Output parameter indicating if backup server was used</param>
+    ''' <param name="errorMessage">Output parameter containing error details</param>
+    ''' <returns>True if connection successful (primary or backup), False if both failed</returns>
+    Public Shared Function TestConnectionWithFallback(config As DatabaseConfig, ByRef usedBackup As Boolean, ByRef errorMessage As String) As Boolean
+        usedBackup = False
+
+        ' Try primary server first
+        If TestConnectionWithConfig(config, errorMessage) Then
+            Return True
+        End If
+
+        ' If primary fails and backup is configured, try backup
+        If Not String.IsNullOrWhiteSpace(config.BackupServerIP) Then
+            Dim primaryError As String = errorMessage
+            Dim backupConfig As New DatabaseConfig() With {
+                .ServerIP = config.BackupServerIP,
+                .BackupServerIP = config.BackupServerIP,
+                .DatabaseName = config.DatabaseName,
+                .Username = config.Username,
+                .Password = config.Password,
+                .Port = config.Port
+            }
+
+            If TestConnectionWithConfig(backupConfig, errorMessage) Then
+                usedBackup = True
+                errorMessage = $"Primary server failed, connected to backup server successfully. Primary error: {primaryError}"
+                Return True
+            Else
+                errorMessage = $"Both servers failed. Primary: {primaryError}. Backup: {errorMessage}"
+                Return False
+            End If
+        End If
+
+        Return False
+    End Function
+
 
     ''' <summary>
     ''' Tests the database connection

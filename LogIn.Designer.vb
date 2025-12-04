@@ -24,10 +24,12 @@ Partial Class LogIn
     Private Sub InitializeComponent()
         TableLayoutPanel1 = New TableLayoutPanel()
         pnlHeader = New Panel()
-        logo = New PictureBox()
+        Panel6 = New Panel()
         lblHeaderTitle = New Label()
+        logo = New PictureBox()
         Panel2 = New Panel()
         Panel3 = New Panel()
+        btnServerSettings = New Button()
         btnLoginTimein = New Button()
         Label3 = New Label()
         Label2 = New Label()
@@ -40,6 +42,7 @@ Partial Class LogIn
         Panel1 = New Panel()
         TableLayoutPanel1.SuspendLayout()
         pnlHeader.SuspendLayout()
+        Panel6.SuspendLayout()
         CType(logo, ComponentModel.ISupportInitialize).BeginInit()
         Panel2.SuspendLayout()
         Panel3.SuspendLayout()
@@ -61,33 +64,30 @@ Partial Class LogIn
         TableLayoutPanel1.RowCount = 2
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 88F))
         TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
+        TableLayoutPanel1.Size = New Size(1280, 720)
         TableLayoutPanel1.TabIndex = 0
         ' 
         ' pnlHeader
         ' 
         pnlHeader.BackColor = Color.FromArgb(CByte(59), CByte(42), CByte(32))
-        pnlHeader.Controls.Add(logo)
-        pnlHeader.Controls.Add(lblHeaderTitle)
+        pnlHeader.Controls.Add(Panel6)
         pnlHeader.Dock = DockStyle.Fill
         pnlHeader.Location = New Point(0, 0)
         pnlHeader.Margin = New Padding(0)
         pnlHeader.Name = "pnlHeader"
         pnlHeader.Padding = New Padding(24, 16, 24, 16)
-        pnlHeader.Size = New Size(1507, 88)
+        pnlHeader.Size = New Size(1280, 88)
         pnlHeader.TabIndex = 1
         ' 
-        ' logo
+        ' Panel6
         ' 
-        logo.Anchor = AnchorStyles.None
-        logo.BackColor = Color.Transparent
-        logo.Image = My.Resources.Resources._291136637_456626923131971_8250989517364923746_n_removebg_preview1
-        logo.Location = New Point(50, 15)
-        logo.Margin = New Padding(0, 9, 0, 0)
-        logo.Name = "logo"
-        logo.Size = New Size(67, 59)
-        logo.SizeMode = PictureBoxSizeMode.Zoom
-        logo.TabIndex = 1
-        logo.TabStop = False
+        Panel6.Controls.Add(lblHeaderTitle)
+        Panel6.Controls.Add(logo)
+        Panel6.Dock = DockStyle.Fill
+        Panel6.Location = New Point(24, 16)
+        Panel6.Name = "Panel6"
+        Panel6.Size = New Size(1232, 56)
+        Panel6.TabIndex = 0
         ' 
         ' lblHeaderTitle
         ' 
@@ -95,11 +95,24 @@ Partial Class LogIn
         lblHeaderTitle.AutoSize = True
         lblHeaderTitle.Font = New Font("Segoe UI Semibold", 14F, FontStyle.Bold)
         lblHeaderTitle.ForeColor = SystemColors.Window
-        lblHeaderTitle.Location = New Point(125, 30)
+        lblHeaderTitle.Location = New Point(594, 15)
         lblHeaderTitle.Name = "lblHeaderTitle"
         lblHeaderTitle.Size = New Size(147, 32)
         lblHeaderTitle.TabIndex = 0
         lblHeaderTitle.Text = "Tabeya Staff"
+        ' 
+        ' logo
+        ' 
+        logo.Anchor = AnchorStyles.None
+        logo.BackColor = Color.Transparent
+        logo.Image = My.Resources.Resources._291136637_456626923131971_8250989517364923746_n_removebg_preview1
+        logo.Location = New Point(518, 2)
+        logo.Margin = New Padding(0, 9, 0, 0)
+        logo.Name = "logo"
+        logo.Size = New Size(67, 59)
+        logo.SizeMode = PictureBoxSizeMode.Zoom
+        logo.TabIndex = 1
+        logo.TabStop = False
         ' 
         ' Panel2
         ' 
@@ -109,12 +122,14 @@ Partial Class LogIn
         Panel2.Location = New Point(0, 88)
         Panel2.Margin = New Padding(0)
         Panel2.Name = "Panel2"
+        Panel2.Size = New Size(1280, 632)
         Panel2.TabIndex = 2
         ' 
         ' Panel3
         ' 
         Panel3.Anchor = AnchorStyles.None
         Panel3.BorderStyle = BorderStyle.FixedSingle
+        Panel3.Controls.Add(btnServerSettings)
         Panel3.Controls.Add(btnLoginTimein)
         Panel3.Controls.Add(Label3)
         Panel3.Controls.Add(Label2)
@@ -122,10 +137,22 @@ Partial Class LogIn
         Panel3.Controls.Add(Panel4)
         Panel3.Controls.Add(lblSubHeader)
         Panel3.Controls.Add(Label1)
-        Panel3.Location = New Point(500, 80)
+        Panel3.Location = New Point(1040, 346)
         Panel3.Name = "Panel3"
         Panel3.Size = New Size(501, 476)
         Panel3.TabIndex = 0
+        ' 
+        ' btnServerSettings
+        ' 
+        btnServerSettings.BackColor = Color.FromArgb(CByte(100), CByte(100), CByte(100))
+        btnServerSettings.FlatStyle = FlatStyle.Flat
+        btnServerSettings.ForeColor = Color.White
+        btnServerSettings.Location = New Point(37, 435)
+        btnServerSettings.Name = "btnServerSettings"
+        btnServerSettings.Size = New Size(140, 30)
+        btnServerSettings.TabIndex = 8
+        btnServerSettings.Text = "⚙ Server Settings"
+        btnServerSettings.UseVisualStyleBackColor = False
         ' 
         ' btnLoginTimein
         ' 
@@ -226,7 +253,7 @@ Partial Class LogIn
         Panel1.Dock = DockStyle.Fill
         Panel1.Location = New Point(0, 0)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(1507, 718)
+        Panel1.Size = New Size(1280, 720)
         Panel1.TabIndex = 0
         ' 
         ' LogIn
@@ -242,7 +269,8 @@ Partial Class LogIn
         WindowState = FormWindowState.Maximized
         TableLayoutPanel1.ResumeLayout(False)
         pnlHeader.ResumeLayout(False)
-        pnlHeader.PerformLayout()
+        Panel6.ResumeLayout(False)
+        Panel6.PerformLayout()
         CType(logo, ComponentModel.ISupportInitialize).EndInit()
         Panel2.ResumeLayout(False)
         Panel3.ResumeLayout(False)
@@ -271,4 +299,6 @@ Partial Class LogIn
     Friend WithEvents Panel5 As Panel
     Friend WithEvents EmployeeID As TextBox
     Friend WithEvents btnLoginTimein As Button
+    Friend WithEvents btnServerSettings As Button
+    Friend WithEvents Panel6 As Panel
 End Class

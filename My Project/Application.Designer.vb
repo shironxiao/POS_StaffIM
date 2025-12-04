@@ -28,7 +28,14 @@ Namespace My
 
         <Global.System.Diagnostics.DebuggerStepThroughAttribute()>
         Protected Overrides Sub OnCreateMainForm()
-            Me.MainForm = Global.Staff.LogIn
+            ' Check if database configuration exists
+            If Not ConfigManager.ConfigExists() Then
+                ' No config found - show server configuration form first
+                Me.MainForm = Global.Staff.ServerConfig
+            Else
+                ' Config exists - proceed to login form
+                Me.MainForm = Global.Staff.LogIn
+            End If
         End Sub
     End Class
 End Namespace

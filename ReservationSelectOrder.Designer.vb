@@ -64,6 +64,11 @@ Partial Class ReservationSelectOrder
         TableLayoutPanel4 = New TableLayoutPanel()
         Panel13 = New Panel()
         Panel3 = New Panel()
+        PictureBox5 = New PictureBox()
+        Label13 = New Label()
+        Label27 = New Label()
+        PictureBox10 = New PictureBox()
+        Label28 = New Label()
         TableLayoutPanel5 = New TableLayoutPanel()
         Panel15 = New Panel()
         Panel16 = New Panel()
@@ -73,18 +78,13 @@ Partial Class ReservationSelectOrder
         btnCancelOrder = New Button()
         btnDineIn = New Button()
         btnTakeOut = New Button()
-        btnCheckout = New Button()
+        btnContinue = New Button()
         Panel19 = New Panel()
         Panel20 = New Panel()
         Label40 = New Label()
         lblTotal = New Label()
         lblTotalValue = New Label()
         Label41 = New Label()
-        PictureBox5 = New PictureBox()
-        Label27 = New Label()
-        PictureBox10 = New PictureBox()
-        Label13 = New Label()
-        Label28 = New Label()
         TableLayoutPanel1.SuspendLayout()
         pnlHeader.SuspendLayout()
         Panel1.SuspendLayout()
@@ -103,12 +103,12 @@ Partial Class ReservationSelectOrder
         Panel12.SuspendLayout()
         TableLayoutPanel4.SuspendLayout()
         Panel13.SuspendLayout()
+        CType(PictureBox5, ComponentModel.ISupportInitialize).BeginInit()
+        CType(PictureBox10, ComponentModel.ISupportInitialize).BeginInit()
         Panel15.SuspendLayout()
         TableLayoutPanel6.SuspendLayout()
         Panel18.SuspendLayout()
         Panel19.SuspendLayout()
-        CType(PictureBox5, ComponentModel.ISupportInitialize).BeginInit()
-        CType(PictureBox10, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
         ' TableLayoutPanel1
@@ -244,7 +244,7 @@ Partial Class ReservationSelectOrder
         Label10.ForeColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
         Label10.Location = New Point(179, 194)
         Label10.Name = "Label10"
-        Label10.Size = New Size(59, 25)
+        Label10.Size = New Size(53, 25)
         Label10.TabIndex = 1
         Label10.Text = "?250"
         ' 
@@ -300,7 +300,7 @@ Partial Class ReservationSelectOrder
         Label7.ForeColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
         Label7.Location = New Point(179, 194)
         Label7.Name = "Label7"
-        Label7.Size = New Size(59, 25)
+        Label7.Size = New Size(53, 25)
         Label7.TabIndex = 1
         Label7.Text = "?250"
         ' 
@@ -356,7 +356,7 @@ Partial Class ReservationSelectOrder
         Label4.ForeColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
         Label4.Location = New Point(179, 194)
         Label4.Name = "Label4"
-        Label4.Size = New Size(59, 25)
+        Label4.Size = New Size(53, 25)
         Label4.TabIndex = 1
         Label4.Text = "?250"
         ' 
@@ -412,7 +412,7 @@ Partial Class ReservationSelectOrder
         Label3.ForeColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
         Label3.Location = New Point(179, 194)
         Label3.Name = "Label3"
-        Label3.Size = New Size(59, 25)
+        Label3.Size = New Size(53, 25)
         Label3.TabIndex = 1
         Label3.Text = "?250"
         ' 
@@ -628,6 +628,62 @@ Partial Class ReservationSelectOrder
         Panel3.Size = New Size(270, 1)
         Panel3.TabIndex = 25
         ' 
+        ' PictureBox5
+        ' 
+        PictureBox5.Image = My.Resources.Resources.minus_circle__1_
+        PictureBox5.Location = New Point(243, 18)
+        PictureBox5.Name = "PictureBox5"
+        PictureBox5.Size = New Size(30, 30)
+        PictureBox5.SizeMode = PictureBoxSizeMode.StretchImage
+        PictureBox5.TabIndex = 20
+        PictureBox5.TabStop = False
+        PictureBox5.Visible = False
+        ' 
+        ' Label13
+        ' 
+        Label13.AutoSize = True
+        Label13.Font = New Font("Segoe UI", 8F)
+        Label13.ForeColor = Color.Gray
+        Label13.Location = New Point(12, 34)
+        Label13.Name = "Label13"
+        Label13.Size = New Size(39, 19)
+        Label13.TabIndex = 19
+        Label13.Text = "?250"
+        Label13.Visible = False
+        ' 
+        ' Label27
+        ' 
+        Label27.AutoSize = True
+        Label27.Font = New Font("Segoe UI Semibold", 11F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label27.Location = New Point(214, 21)
+        Label27.Name = "Label27"
+        Label27.Size = New Size(23, 25)
+        Label27.TabIndex = 17
+        Label27.Text = "0"
+        Label27.Visible = False
+        ' 
+        ' PictureBox10
+        ' 
+        PictureBox10.Image = My.Resources.Resources.add
+        PictureBox10.Location = New Point(178, 18)
+        PictureBox10.Name = "PictureBox10"
+        PictureBox10.Size = New Size(30, 30)
+        PictureBox10.SizeMode = PictureBoxSizeMode.StretchImage
+        PictureBox10.TabIndex = 16
+        PictureBox10.TabStop = False
+        PictureBox10.Visible = False
+        ' 
+        ' Label28
+        ' 
+        Label28.AutoSize = True
+        Label28.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Label28.Location = New Point(12, 14)
+        Label28.Name = "Label28"
+        Label28.Size = New Size(99, 20)
+        Label28.TabIndex = 15
+        Label28.Text = "Crispy Pork..."
+        Label28.Visible = False
+        ' 
         ' TableLayoutPanel5
         ' 
         TableLayoutPanel5.AutoSize = True
@@ -694,7 +750,7 @@ Partial Class ReservationSelectOrder
         Panel18.Controls.Add(btnCancelOrder)
         Panel18.Controls.Add(btnDineIn)
         Panel18.Controls.Add(btnTakeOut)
-        Panel18.Controls.Add(btnCheckout)
+        Panel18.Controls.Add(btnContinue)
         Panel18.Dock = DockStyle.Fill
         Panel18.Location = New Point(3, 3)
         Panel18.Name = "Panel18"
@@ -740,21 +796,21 @@ Partial Class ReservationSelectOrder
         btnTakeOut.Text = "Takeout"
         btnTakeOut.UseVisualStyleBackColor = False
         ' 
-        ' btnCheckout
+        ' btnContinue
         ' 
-        btnCheckout.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
-        btnCheckout.FlatAppearance.BorderColor = Color.Black
-        btnCheckout.FlatAppearance.MouseDownBackColor = Color.FromArgb(CByte(250), CByte(186), CByte(142))
-        btnCheckout.FlatStyle = FlatStyle.Flat
-        btnCheckout.Font = New Font("Segoe UI", 10F, FontStyle.Bold)
-        btnCheckout.ForeColor = Color.White
-        btnCheckout.Location = New Point(627, 42)
-        btnCheckout.Margin = New Padding(25)
-        btnCheckout.Name = "btnCheckout"
-        btnCheckout.Size = New Size(228, 85)
-        btnCheckout.TabIndex = 21
-        btnCheckout.Text = "Checkout/Receipt"
-        btnCheckout.UseVisualStyleBackColor = False
+        btnContinue.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
+        btnContinue.FlatAppearance.BorderColor = Color.Black
+        btnContinue.FlatAppearance.MouseDownBackColor = Color.FromArgb(CByte(250), CByte(186), CByte(142))
+        btnContinue.FlatStyle = FlatStyle.Flat
+        btnContinue.Font = New Font("Segoe UI", 10F, FontStyle.Bold)
+        btnContinue.ForeColor = Color.White
+        btnContinue.Location = New Point(627, 42)
+        btnContinue.Margin = New Padding(25)
+        btnContinue.Name = "btnContinue"
+        btnContinue.Size = New Size(228, 85)
+        btnContinue.TabIndex = 21
+        btnContinue.Text = "Continue"
+        btnContinue.UseVisualStyleBackColor = False
         ' 
         ' Panel19
         ' 
@@ -822,62 +878,6 @@ Partial Class ReservationSelectOrder
         Label41.TabIndex = 27
         Label41.Text = "?0"
         ' 
-        ' PictureBox5
-        ' 
-        PictureBox5.Image = My.Resources.Resources.minus_circle__1_
-        PictureBox5.Location = New Point(243, 18)
-        PictureBox5.Name = "PictureBox5"
-        PictureBox5.Size = New Size(30, 30)
-        PictureBox5.SizeMode = PictureBoxSizeMode.StretchImage
-        PictureBox5.TabIndex = 20
-        PictureBox5.TabStop = False
-        PictureBox5.Visible = False
-        ' 
-        ' Label27
-        ' 
-        Label27.AutoSize = True
-        Label27.Font = New Font("Segoe UI Semibold", 11F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label27.Location = New Point(214, 21)
-        Label27.Name = "Label27"
-        Label27.Size = New Size(23, 25)
-        Label27.TabIndex = 17
-        Label27.Text = "0"
-        Label27.Visible = False
-        ' 
-        ' PictureBox10
-        ' 
-        PictureBox10.Image = My.Resources.Resources.add
-        PictureBox10.Location = New Point(178, 18)
-        PictureBox10.Name = "PictureBox10"
-        PictureBox10.Size = New Size(30, 30)
-        PictureBox10.SizeMode = PictureBoxSizeMode.StretchImage
-        PictureBox10.TabIndex = 16
-        PictureBox10.TabStop = False
-        PictureBox10.Visible = False
-        ' 
-        ' Label13
-        ' 
-        Label13.AutoSize = True
-        Label13.Font = New Font("Segoe UI", 8F)
-        Label13.ForeColor = Color.Gray
-        Label13.Location = New Point(12, 34)
-        Label13.Name = "Label13"
-        Label13.Size = New Size(41, 19)
-        Label13.TabIndex = 19
-        Label13.Text = "?250"
-        Label13.Visible = False
-        ' 
-        ' Label28
-        ' 
-        Label28.AutoSize = True
-        Label28.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Label28.Location = New Point(12, 14)
-        Label28.Name = "Label28"
-        Label28.Size = New Size(99, 20)
-        Label28.TabIndex = 15
-        Label28.Text = "Crispy Pork..."
-        Label28.Visible = False
-        ' 
         ' ReservationSelectOrder
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
@@ -917,14 +917,14 @@ Partial Class ReservationSelectOrder
         TableLayoutPanel4.ResumeLayout(False)
         Panel13.ResumeLayout(False)
         Panel13.PerformLayout()
+        CType(PictureBox5, ComponentModel.ISupportInitialize).EndInit()
+        CType(PictureBox10, ComponentModel.ISupportInitialize).EndInit()
         Panel15.ResumeLayout(False)
         Panel15.PerformLayout()
         TableLayoutPanel6.ResumeLayout(False)
         Panel18.ResumeLayout(False)
         Panel19.ResumeLayout(False)
         Panel19.PerformLayout()
-        CType(PictureBox5, ComponentModel.ISupportInitialize).EndInit()
-        CType(PictureBox10, ComponentModel.ISupportInitialize).EndInit()
         ResumeLayout(False)
     End Sub
 
@@ -938,7 +938,7 @@ Partial Class ReservationSelectOrder
     Friend WithEvents btnCancelOrder As Button
     Friend WithEvents btnDineIn As Button
     Friend WithEvents btnTakeOut As Button
-    Friend WithEvents btnCheckout As Button
+    Friend WithEvents btnContinue As Button
     Friend WithEvents Panel19 As Panel
     Friend WithEvents Panel20 As Panel
     Friend WithEvents Label40 As Label

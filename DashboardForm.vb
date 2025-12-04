@@ -4,17 +4,146 @@ Public Class DashboardForm
     Private orderRepository As New OrderRepository()
     Private reservationRepository As New ReservationRepository()
     Private WithEvents dashboardTimer As New Timer()
+    
+    ' Active Orders Pagination
+    Private activeOrdersPage As Integer = 1
+    Private activeOrdersPageSize As Integer = 100 ' Updated to 100
+    Private activeOrdersTotalPages As Integer = 1
+    
+    ' Reservations Pagination
+    Private reservationsPage As Integer = 1
+    Private reservationsPageSize As Integer = 100 ' Updated to 100
+    Private reservationsTotalPages As Integer = 1
+    
+    ' Controls (Active Orders)
+    Private btnPrevOrders As Button
+    Private btnNextOrders As Button
+    Private txtPageOrders As TextBox
+    Private lblTotalPagesOrders As Label
+    
+    ' Controls (Reservations)
+    Private btnPrevRes As Button
+    Private btnNextRes As Button
+    Private txtPageRes As TextBox
+    Private lblTotalPagesRes As Label
 
     ''' <summary>
     ''' Loads dashboard statistics when form loads
     ''' </summary>
-    Private Sub DashboardForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    ''' <summary>
+    ''' Loads dashboard statistics when form loads
+    ''' </summary>
+    Private Async Sub DashboardForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         dashboardTimer.Interval = 1000
         dashboardTimer.Start()
+        
+        InitializePaginationControls()
+        
         LoadDashboardStatistics()
-        LoadActiveOrders()
-        LoadTodayReservations()
+        
+        ' Load critical data in parallel
+        Dim taskOrders = LoadActiveOrdersAsync()
+        Dim taskReservations = LoadTodayReservationsAsync()
+        
+        Await Task.WhenAll(taskOrders, taskReservations)
     End Sub
+
+    Private Sub InitializePaginationControls()
+        ' Active Orders Pagination Controls
+        Dim pnlOrdersPager As New Panel With {
+            .Height = 40,
+            .Dock = DockStyle.Bottom,
+            .BackColor = Color.White
+        }
+        
+        btnPrevOrders = CreatePaginationButton("<", 10, 5)
+        AddHandler btnPrevOrders.Click, AddressOf btnPrevOrders_Click
+        
+        btnNextOrders = CreatePaginationButton(">", 160, 5)
+        AddHandler btnNextOrders.Click, AddressOf btnNextOrders_Click
+        
+        txtPageOrders = New TextBox With {
+            .Text = "1",
+            .Size = New Size(40, 25),
+            .TextAlign = HorizontalAlignment.Center,
+            .Font = New Font("Segoe UI", 9),
+            .Location = New Point(60, 8)
+        }
+        AddHandler txtPageOrders.KeyDown, AddressOf txtPageOrders_KeyDown
+        AddHandler txtPageOrders.Leave, Sub(s, ev) ValidateAndJumpOrders()
+
+        lblTotalPagesOrders = New Label With {
+            .Text = "/ 1",
+            .AutoSize = False,
+            .Size = New Size(50, 30),
+            .TextAlign = ContentAlignment.MiddleLeft,
+            .Location = New Point(105, 5),
+            .Font = New Font("Segoe UI", 9)
+        }
+        
+        pnlOrdersPager.Controls.AddRange({btnPrevOrders, btnNextOrders, txtPageOrders, lblTotalPagesOrders})
+        
+        ' Add to TableLayoutPanel1's parent or ensure it sits below list
+        ' Assuming TableLayoutPanel1 is inside a container, ideally we dock this to bottom
+        ' If TableLayoutPanel1 is Dock.Fill, we need to adjust hierarchy.
+        ' Strategy: Add panel to TableLayoutPanel1's Parent. 
+        ' Important: Check if TableLayoutPanel1 is directly on Form or in a Panel.
+        ' Assuming it's in a panel (e.g., pnlActiveOrders) based on standard design.
+        If TableLayoutPanel1.Parent IsNot Nothing Then
+             TableLayoutPanel1.Parent.Controls.Add(pnlOrdersPager)
+             pnlOrdersPager.BringToFront()
+             ' Adjust TLP height if needed or let Dock handle it if parent acts correctly
+        End If
+
+        ' Reservations Pagination Controls
+        Dim pnlResPager As New Panel With {
+            .Height = 40,
+            .Dock = DockStyle.Bottom,
+            .BackColor = Color.White
+        }
+        
+        btnPrevRes = CreatePaginationButton("<", 10, 5)
+        AddHandler btnPrevRes.Click, AddressOf btnPrevRes_Click
+        
+        btnNextRes = CreatePaginationButton(">", 160, 5)
+        AddHandler btnNextRes.Click, AddressOf btnNextRes_Click
+        
+        txtPageRes = New TextBox With {
+            .Text = "1",
+            .Size = New Size(40, 25),
+            .TextAlign = HorizontalAlignment.Center,
+            .Font = New Font("Segoe UI", 9),
+            .Location = New Point(60, 8)
+        }
+        AddHandler txtPageRes.KeyDown, AddressOf txtPageRes_KeyDown
+        AddHandler txtPageRes.Leave, Sub(s, ev) ValidateAndJumpReservations()
+
+        lblTotalPagesRes = New Label With {
+            .Text = "/ 1",
+            .AutoSize = False,
+            .Size = New Size(50, 30),
+            .TextAlign = ContentAlignment.MiddleLeft,
+            .Location = New Point(105, 5),
+            .Font = New Font("Segoe UI", 9)
+        }
+        
+        pnlResPager.Controls.AddRange({btnPrevRes, btnNextRes, txtPageRes, lblTotalPagesRes})
+        
+        If TableLayoutPanel2.Parent IsNot Nothing Then
+             TableLayoutPanel2.Parent.Controls.Add(pnlResPager)
+             pnlResPager.BringToFront()
+        End If
+    End Sub
+    
+    Private Function CreatePaginationButton(text As String, x As Integer, y As Integer) As Button
+        Return New Button With {
+            .Text = text,
+            .Location = New Point(x, y),
+            .Size = New Size(40, 30),
+            .FlatStyle = FlatStyle.Flat,
+            .BackColor = Color.WhiteSmoke
+        }
+    End Function
 
     ''' <summary>
     ''' Loads and displays dashboard statistics (orders, reservations, feedback counts)
@@ -35,13 +164,13 @@ Public Class DashboardForm
 
             ' Load feedback count (placeholder logic as per original)
             ' Assuming we might add FeedbackRepository later
-            Dim feedbackQuery As String = "SELECT COUNT(*) FROM customers WHERE FeedbackCount > 0 AND DATE(LastTransactionDate) = CURDATE()"
-            Dim feedbackCount As Object = Database.ExecuteScalar(feedbackQuery)
-            If feedbackCount IsNot Nothing Then
-                lblCardFeedbackValue.Text = feedbackCount.ToString()
-            Else
-                lblCardFeedbackValue.Text = "0"
-            End If
+            ' Dim feedbackQuery As String = "SELECT COUNT(*) FROM customers WHERE FeedbackCount > 0 AND DATE(LastTransactionDate) = CURDATE()"
+            ' Dim feedbackCount As Object = modDB.ExecuteScalar(feedbackQuery)
+            ' If feedbackCount IsNot Nothing Then
+            '     lblCardFeedbackValue.Text = feedbackCount.ToString()
+            ' Else
+            '     lblCardFeedbackValue.Text = "0"
+            ' End If
         Catch ex As Exception
             MessageBox.Show($"Error loading dashboard statistics: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -51,14 +180,75 @@ Public Class DashboardForm
     ''' Loads active orders (orders with status 'Preparing' or 'Served')
     ''' and displays them in the active orders panel
     ''' </summary>
-    Private Sub LoadActiveOrders()
+    Private Async Function LoadActiveOrdersAsync() As Task
         Try
-            Dim activeOrders As List(Of Order) = orderRepository.GetActiveOrders()
+            Dim totalCount As Integer = Await orderRepository.GetTotalActiveOrdersCountAsync()
+            activeOrdersTotalPages = Math.Max(1, CInt(Math.Ceiling(totalCount / activeOrdersPageSize)))
+            
+            ' Validate page
+            If activeOrdersPage > activeOrdersTotalPages Then activeOrdersPage = activeOrdersTotalPages
+            If activeOrdersPage < 1 Then activeOrdersPage = 1
+            
+            Dim offset As Integer = (activeOrdersPage - 1) * activeOrdersPageSize
+            Dim activeOrders As List(Of Order) = Await orderRepository.GetActiveOrdersPagedAsync(activeOrdersPageSize, offset)
+            
             DisplayActiveOrders(activeOrders)
+            UpdateActiveOrdersControls()
+            
         Catch ex As Exception
             ' Log error but don't crash dashboard
             Console.WriteLine($"Error loading active orders: {ex.Message}")
         End Try
+    End Function
+
+
+    
+    Private Sub UpdateActiveOrdersControls()
+        If txtPageOrders IsNot Nothing Then
+            txtPageOrders.Text = activeOrdersPage.ToString()
+            lblTotalPagesOrders.Text = $"/ {activeOrdersTotalPages}"
+            btnPrevOrders.Enabled = (activeOrdersPage > 1)
+            btnNextOrders.Enabled = (activeOrdersPage < activeOrdersTotalPages)
+        End If
+    End Sub
+
+    Private Sub txtPageOrders_KeyDown(sender As Object, e As KeyEventArgs)
+        If e.KeyCode = Keys.Enter Then
+            e.SuppressKeyPress = True
+            e.Handled = True
+            ValidateAndJumpOrders()
+        End If
+    End Sub
+
+    Private Async Sub ValidateAndJumpOrders()
+        Dim newPage As Integer
+        If Integer.TryParse(txtPageOrders.Text, newPage) Then
+            If newPage < 1 Then newPage = 1
+            If newPage > activeOrdersTotalPages Then newPage = activeOrdersTotalPages
+            
+            If newPage <> activeOrdersPage Then
+                activeOrdersPage = newPage
+                Await LoadActiveOrdersAsync()
+            Else
+                txtPageOrders.Text = activeOrdersPage.ToString()
+            End If
+        Else
+            txtPageOrders.Text = activeOrdersPage.ToString()
+        End If
+    End Sub
+    
+    Private Async Sub btnPrevOrders_Click(sender As Object, e As EventArgs)
+        If activeOrdersPage > 1 Then
+            activeOrdersPage -= 1
+            Await LoadActiveOrdersAsync()
+        End If
+    End Sub
+
+    Private Async Sub btnNextOrders_Click(sender As Object, e As EventArgs)
+        If activeOrdersPage < activeOrdersTotalPages Then
+            activeOrdersPage += 1
+            Await LoadActiveOrdersAsync()
+        End If
     End Sub
 
     ''' <summary>
@@ -193,13 +383,77 @@ Public Class DashboardForm
     ''' <summary>
     ''' Loads today's reservations and displays them in the reservations panel
     ''' </summary>
-    Private Sub LoadTodayReservations()
+    ''' <summary>
+    ''' Loads today's reservations and displays them in the reservations panel
+    ''' </summary>
+    Private Async Function LoadTodayReservationsAsync() As Task
         Try
-            Dim reservations As List(Of Reservation) = reservationRepository.GetTodayReservations()
+            Dim totalCount As Integer = Await reservationRepository.GetTotalTodayReservationsCountAsync()
+            reservationsTotalPages = Math.Max(1, CInt(Math.Ceiling(totalCount / reservationsPageSize)))
+            
+            ' Validate page
+            If reservationsPage > reservationsTotalPages Then reservationsPage = reservationsTotalPages
+            If reservationsPage < 1 Then reservationsPage = 1
+            
+            Dim offset As Integer = (reservationsPage - 1) * reservationsPageSize
+            Dim reservations As List(Of Reservation) = Await reservationRepository.GetTodayReservationsPagedAsync(reservationsPageSize, offset)
+            
             DisplayTodayReservations(reservations)
+            UpdateReservationsControls()
+            
         Catch ex As Exception
             Console.WriteLine($"Error loading reservations: {ex.Message}")
         End Try
+    End Function
+
+
+
+    Private Sub UpdateReservationsControls()
+        If txtPageRes IsNot Nothing Then
+            txtPageRes.Text = reservationsPage.ToString()
+            lblTotalPagesRes.Text = $"/ {reservationsTotalPages}"
+            btnPrevRes.Enabled = (reservationsPage > 1)
+            btnNextRes.Enabled = (reservationsPage < reservationsTotalPages)
+        End If
+    End Sub
+
+    Private Sub txtPageRes_KeyDown(sender As Object, e As KeyEventArgs)
+        If e.KeyCode = Keys.Enter Then
+            e.SuppressKeyPress = True
+            e.Handled = True
+            ValidateAndJumpReservations()
+        End If
+    End Sub
+
+    Private Async Sub ValidateAndJumpReservations()
+        Dim newPage As Integer
+        If Integer.TryParse(txtPageRes.Text, newPage) Then
+            If newPage < 1 Then newPage = 1
+            If newPage > reservationsTotalPages Then newPage = reservationsTotalPages
+            
+            If newPage <> reservationsPage Then
+                reservationsPage = newPage
+                Await LoadTodayReservationsAsync()
+            Else
+                txtPageRes.Text = reservationsPage.ToString()
+            End If
+        Else
+            txtPageRes.Text = reservationsPage.ToString()
+        End If
+    End Sub
+    
+    Private Async Sub btnPrevRes_Click(sender As Object, e As EventArgs)
+        If reservationsPage > 1 Then
+            reservationsPage -= 1
+            Await LoadTodayReservationsAsync()
+        End If
+    End Sub
+
+    Private Async Sub btnNextRes_Click(sender As Object, e As EventArgs)
+        If reservationsPage < reservationsTotalPages Then
+            reservationsPage += 1
+            Await LoadTodayReservationsAsync()
+        End If
     End Sub
 
     ''' <summary>
@@ -243,7 +497,8 @@ Public Class DashboardForm
                 .BackColor = Color.White,
                 .Margin = New Padding(4),
                 .Dock = DockStyle.Fill,
-                .Padding = New Padding(15, 10, 15, 10)
+                .Padding = New Padding(15, 10, 15, 10),
+                .Tag = res
             }
 
             ' Left: Guest Name
@@ -285,6 +540,7 @@ Public Class DashboardForm
             End Select
 
             Dim lblStatus As New Label With {
+                .Name = "lblStatus",
                 .Text = res.ReservationStatus,
                 .Font = New Font("Segoe UI", 10, FontStyle.Bold),
                 .ForeColor = statusColor,
@@ -293,11 +549,22 @@ Public Class DashboardForm
                 .Anchor = AnchorStyles.Top Or AnchorStyles.Right
             }
 
+            ' Countdown timer (Center Right)
+            Dim lblCountdown As New Label With {
+                .Name = "lblCountdown",
+                .Text = "...",
+                .Font = New Font("Segoe UI", 10),
+                .ForeColor = Color.Black,
+                .AutoSize = True,
+                .Location = New Point(200, 20)
+            }
+
             ' Add labels to panel
             itemPanel.Controls.Add(lblName)
             itemPanel.Controls.Add(lblTime)
             itemPanel.Controls.Add(lblGuests)
             itemPanel.Controls.Add(lblStatus)
+            itemPanel.Controls.Add(lblCountdown)
 
             ' Add panel to table
             TableLayoutPanel2.Controls.Add(itemPanel)
@@ -309,11 +576,11 @@ Public Class DashboardForm
     Private Sub pnlTodayReservationsPlaceholder_Paint(sender As Object, e As PaintEventArgs) Handles pnlTodayReservationsPlaceholder.Paint
 
     End Sub
-    Private Sub CancelOrder(order As Order)
+    Private Async Sub CancelOrder(order As Order)
         If MessageBox.Show($"Are you sure you want to cancel Order #{order.OrderID}?", "Confirm Cancel", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
             Try
                 orderRepository.UpdateOrderStatus(order.OrderID, "Cancelled")
-                LoadActiveOrders() ' Refresh list
+                Await LoadActiveOrdersAsync() ' Refresh list
             Catch ex As Exception
                 MessageBox.Show($"Error cancelling order: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
@@ -333,7 +600,7 @@ Public Class DashboardForm
                 If lblStatus Is Nothing OrElse lblCountdown Is Nothing OrElse btnCancel Is Nothing Then Continue For
 
                 Dim startTime As DateTime = order.OrderDate.Date + order.OrderTime
-                Dim prepMinutes As Integer = If(order.PreparationTimeEstimate.HasValue, order.PreparationTimeEstimate.Value, 0)
+                Dim prepMinutes As Integer = 15 ' Default 15 minutes prep time
                 Dim elapsed As TimeSpan = DateTime.Now - startTime
 
                 ' Logic
@@ -385,6 +652,48 @@ Public Class DashboardForm
                             orderRepository.UpdateOrderStatus(order.OrderID, "Completed")
                         End If
                     End If
+                End If
+            End If
+        Next
+
+        ' Handle Reservation Timers (TableLayoutPanel2)
+        For Each itemPanel As Control In TableLayoutPanel2.Controls
+            If TypeOf itemPanel Is Panel AndAlso itemPanel.Tag IsNot Nothing Then
+                Dim reservation As Reservation = TryCast(itemPanel.Tag, Reservation)
+                If reservation Is Nothing Then Continue For
+
+                Dim lblStatus As Label = itemPanel.Controls.OfType(Of Label).FirstOrDefault(Function(l) l.Name = "lblStatus")
+                Dim lblCountdown As Label = itemPanel.Controls.OfType(Of Label).FirstOrDefault(Function(l) l.Name = "lblCountdown")
+
+                If lblStatus Is Nothing OrElse lblCountdown Is Nothing Then Continue For
+
+                ' Calculate times
+                Dim eventDateTime As DateTime = DateTime.Today.Add(reservation.EventTime)
+                Dim prepMinutes As Integer = If(reservation.PrepTime > 0, reservation.PrepTime, 15) ' Default 15 if no prep time
+                Dim startTime As DateTime = eventDateTime.AddMinutes(-prepMinutes)
+                Dim now As DateTime = DateTime.Now
+
+                ' Timer logic
+                If now < startTime Then
+                    ' Before prep should start - show waiting time
+                    Dim waitTime As TimeSpan = startTime - now
+                    lblCountdown.Text = String.Format("Starts in {0:mm\:ss}", waitTime)
+                    lblCountdown.ForeColor = Color.Gray
+                ElseIf now >= startTime AndAlso now < eventDateTime Then
+                    ' During prep - countdown to event time
+                    Dim remaining As TimeSpan = eventDateTime - now
+                    If remaining.TotalHours >= 1 Then
+                        lblCountdown.Text = String.Format("{0:h\:mm\:ss}", remaining)
+                    Else
+                        lblCountdown.Text = String.Format("{0:mm\:ss}", remaining)
+                    End If
+                    lblCountdown.ForeColor = Color.Orange
+                    lblStatus.ForeColor = Color.Orange
+                Else
+                    ' Event time reached or passed - ready to serve
+                    lblCountdown.Text = "00:00"
+                    lblCountdown.ForeColor = Color.Green
+                    lblStatus.ForeColor = Color.FromArgb(40, 167, 69)
                 End If
             End If
         Next

@@ -544,8 +544,7 @@ Public Class PlaceOrderForm
                 .OrderTime = DateTime.Now.TimeOfDay,
                 .ItemsOrderedCount = itemsCount,
                 .TotalAmount = totalAmount,
-                .OrderStatus = "Preparing",
-                .PreparationTimeEstimate = If(orderItems.Any(), CInt(orderItems.Sum(Function(i) i.PrepTime * (1 + (i.Quantity - 1) * 0.2))), 0)
+                .OrderStatus = "Preparing"
             }
 
             Dim orderID As Integer = orderRepository.CreateOrder(newOrder, orderItems)

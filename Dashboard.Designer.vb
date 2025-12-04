@@ -29,6 +29,7 @@ Partial Class Dashboard
         btnPlaceOrder = New Button()
         btnReservations = New Button()
         btnReports = New Button()
+        Button1 = New Button()
         btnLogout = New Button()
         tlpRight = New TableLayoutPanel()
         pnlHeader = New Panel()
@@ -147,6 +148,7 @@ Partial Class Dashboard
         flpNav.Controls.Add(btnDashboard)
         flpNav.Controls.Add(btnPlaceOrder)
         flpNav.Controls.Add(btnReservations)
+        flpNav.Controls.Add(Button1)
         flpNav.Controls.Add(btnReports)
         flpNav.Controls.Add(btnLogout)
         flpNav.Dock = DockStyle.Fill
@@ -231,7 +233,7 @@ Partial Class Dashboard
         btnReports.Font = New Font("Segoe UI", 10F)
         btnReports.ForeColor = Color.White
         btnReports.ImageAlign = ContentAlignment.MiddleLeft
-        btnReports.Location = New Point(0, 176)
+        btnReports.Location = New Point(0, 232)
         btnReports.Margin = New Padding(0, 0, 0, 8)
         btnReports.Name = "btnReports"
         btnReports.Padding = New Padding(12, 10, 12, 10)
@@ -243,6 +245,27 @@ Partial Class Dashboard
         btnReports.TextImageRelation = TextImageRelation.ImageBeforeText
         btnReports.UseVisualStyleBackColor = False
         ' 
+        ' Button1
+        ' 
+        Button1.BackColor = Color.Transparent
+        Button1.Cursor = Cursors.Hand
+        Button1.FlatAppearance.BorderSize = 0
+        Button1.FlatStyle = FlatStyle.Flat
+        Button1.Font = New Font("Segoe UI", 10F)
+        Button1.ForeColor = Color.White
+        Button1.ImageAlign = ContentAlignment.MiddleLeft
+        Button1.Location = New Point(0, 176)
+        Button1.Margin = New Padding(0, 0, 0, 8)
+        Button1.Name = "Button1"
+        Button1.Padding = New Padding(12, 10, 12, 10)
+        Button1.Size = New Size(188, 48)
+        Button1.TabIndex = 6
+        Button1.Tag = "Reports"
+        Button1.Text = "Online Orders"
+        Button1.TextAlign = ContentAlignment.MiddleLeft
+        Button1.TextImageRelation = TextImageRelation.ImageBeforeText
+        Button1.UseVisualStyleBackColor = False
+        ' 
         ' btnLogout
         ' 
         btnLogout.BackColor = Color.FromArgb(CByte(200), CByte(50), CByte(50))
@@ -252,7 +275,7 @@ Partial Class Dashboard
         btnLogout.Font = New Font("Segoe UI", 10F, FontStyle.Bold)
         btnLogout.ForeColor = Color.White
         btnLogout.ImageAlign = ContentAlignment.MiddleLeft
-        btnLogout.Location = New Point(0, 232)
+        btnLogout.Location = New Point(0, 288)
         btnLogout.Margin = New Padding(0, 0, 0, 8)
         btnLogout.Name = "btnLogout"
         btnLogout.Padding = New Padding(12, 10, 12, 10)
@@ -357,4 +380,5 @@ Partial Class Dashboard
     Friend WithEvents pnlContent As Panel
     Friend WithEvents btnReservations As Button
     Friend WithEvents btnLogout As Button
+    Friend WithEvents Button1 As Button
 End Class

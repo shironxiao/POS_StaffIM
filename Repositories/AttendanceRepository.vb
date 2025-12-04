@@ -24,11 +24,11 @@ Public Class AttendanceRepository
                 New MySqlParameter("@Status", "Present")
             }
 
-            Database.ExecuteNonQuery(query, parameters)
+            modDB.ExecuteNonQuery(query, parameters)
 
             ' Get the last inserted ID
             Dim lastIdQuery As String = "SELECT LAST_INSERT_ID()"
-            Dim result As DataTable = Database.ExecuteQuery(lastIdQuery)
+            Dim result As DataTable = modDB.ExecuteQuery(lastIdQuery)
 
             If result IsNot Nothing AndAlso result.Rows.Count > 0 Then
                 Return Convert.ToInt32(result.Rows(0)(0))
@@ -50,7 +50,7 @@ Public Class AttendanceRepository
             ' Calculate work hours
             Dim timeInQuery As String = "SELECT TimeIn FROM employee_attendance WHERE AttendanceID = @AttendanceID"
             Dim timeInParams As MySqlParameter() = {New MySqlParameter("@AttendanceID", attendanceID)}
-            Dim timeInResult As DataTable = Database.ExecuteQuery(timeInQuery, timeInParams)
+            Dim timeInResult As DataTable = modDB.ExecuteQuery(timeInQuery, timeInParams)
             
             Dim workHours As Decimal = 0
             If timeInResult IsNot Nothing AndAlso timeInResult.Rows.Count > 0 Then
@@ -71,7 +71,7 @@ Public Class AttendanceRepository
                 New MySqlParameter("@EmployeeID", employeeID)
             }
 
-            Database.ExecuteNonQuery(query, parameters)
+            modDB.ExecuteNonQuery(query, parameters)
         Catch ex As Exception
             Throw New Exception($"Error recording time-out: {ex.Message}", ex)
         End Try
@@ -90,7 +90,7 @@ Public Class AttendanceRepository
                 LIMIT 1"
 
             Dim parameters As MySqlParameter() = {New MySqlParameter("@EmployeeID", employeeID)}
-            Dim result As DataTable = Database.ExecuteQuery(query, parameters)
+            Dim result As DataTable = modDB.ExecuteQuery(query, parameters)
 
             If result IsNot Nothing AndAlso result.Rows.Count > 0 Then
                 Dim row = result.Rows(0)
@@ -125,7 +125,7 @@ Public Class AttendanceRepository
                 New MySqlParameter("@EndDate", endDate.Date)
             }
 
-            Dim result As DataTable = Database.ExecuteQuery(query, parameters)
+            Dim result As DataTable = modDB.ExecuteQuery(query, parameters)
             Dim records As New List(Of AttendanceRecord)
 
             If result IsNot Nothing Then

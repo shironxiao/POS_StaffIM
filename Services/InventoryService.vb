@@ -57,7 +57,7 @@ Public Class InventoryService
         Try
             ' Use raw connection to avoid Database class MessageBox on error
             ' This allows us to handle specific SP errors gracefully
-            Using conn As New MySqlConnection(Database.ConnectionString)
+            Using conn As New MySqlConnection(modDB.ConnectionString)
                 conn.Open()
                 Using cmd As New MySqlCommand("CALL DeductIngredientsForPOSOrder(@orderID)", conn)
                     cmd.Parameters.AddWithValue("@orderID", orderID)
@@ -83,7 +83,7 @@ Public Class InventoryService
                 New MySqlParameter("@reservationID", reservationID)
             }
             
-            Database.ExecuteNonQuery(query, parameters)
+            modDB.ExecuteNonQuery(query, parameters)
             Return True
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Inventory deduction error for Reservation #{reservationID}: {ex.Message}")
@@ -116,7 +116,7 @@ Public Class InventoryService
                 pBatchNumber
             }
             
-            Database.ExecuteNonQuery(query, parameters)
+            modDB.ExecuteNonQuery(query, parameters)
             Return True
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Error adding batch: {ex.Message}")
@@ -136,7 +136,7 @@ Public Class InventoryService
                 New MySqlParameter("@notes", notes)
             }
             
-            Database.ExecuteNonQuery(query, parameters)
+            modDB.ExecuteNonQuery(query, parameters)
             Return True
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Error discarding batch #{batchID}: {ex.Message}")
@@ -162,7 +162,7 @@ Public Class InventoryService
                 New MySqlParameter("@notes", notes)
             }
             
-            Database.ExecuteNonQuery(query, parameters)
+            modDB.ExecuteNonQuery(query, parameters)
             Return True
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Error logging batch edit #{batchID}: {ex.Message}")
@@ -173,8 +173,18 @@ Public Class InventoryService
     ''' <summary>
     ''' Gets all ingredients required for a product.
     ''' </summary>
+    ''' <summary>
+    ''' Gets all ingredients required for a product.
+    ''' </summary>
     Private Function GetProductIngredients(productName As String) As List(Of ProductIngredient)
-        Dim ingredients As New List(Of ProductIngredient)
+        Dim cacheKey As String = $"ProductIngredients_{productName}"
+        Dim ingredients As List(Of ProductIngredient) = DataCacheService.GetItem(Of List(Of ProductIngredient))(cacheKey)
+        
+        If ingredients IsNot Nothing Then
+            Return ingredients
+        End If
+        
+        ingredients = New List(Of ProductIngredient)
         
         Dim query As String = "SELECT pi.ProductIngredientID, pi.ProductID, pi.IngredientID, pi.QuantityUsed, pi.UnitType, i.IngredientName " &
                               "FROM product_ingredients pi " &
@@ -186,7 +196,7 @@ Public Class InventoryService
             New MySqlParameter("@productName", productName)
         }
         
-        Dim table As DataTable = Database.ExecuteQuery(query, parameters)
+        Dim table As DataTable = modDB.ExecuteQuery(query, parameters)
         If table IsNot Nothing Then
             For Each row As DataRow In table.Rows
                 ingredients.Add(New ProductIngredient With {
@@ -199,6 +209,9 @@ Public Class InventoryService
                 })
             Next
         End If
+        
+        ' Cache for 30 minutes (recipes rarely change)
+        DataCacheService.SetItem(cacheKey, ingredients, 30)
         
         Return ingredients
     End Function
@@ -215,7 +228,7 @@ Public Class InventoryService
             New MySqlParameter("@ingredientID", ingredientID)
         }
         
-        Dim result As Object = Database.ExecuteScalar(query, parameters)
+        Dim result As Object = modDB.ExecuteScalar(query, parameters)
         If result IsNot Nothing AndAlso IsNumeric(result) Then
             Return Convert.ToDecimal(result)
         End If
@@ -231,7 +244,7 @@ Public Class InventoryService
         Try
             ' 1. Fetch total stock for all ingredients
             Dim stockQuery As String = "SELECT IngredientID, SUM(StockQuantity) as TotalStock FROM inventory_batches WHERE BatchStatus = 'Active' GROUP BY IngredientID"
-            Dim stockTable As DataTable = Database.ExecuteQuery(stockQuery)
+            Dim stockTable As DataTable = modDB.ExecuteQuery(stockQuery)
             Dim stockMap As New Dictionary(Of Integer, Decimal)
             
             If stockTable IsNot Nothing Then
@@ -242,7 +255,7 @@ Public Class InventoryService
             
             ' 2. Fetch all product ingredients
             Dim ingQuery As String = "SELECT ProductID, IngredientID, QuantityUsed FROM product_ingredients"
-            Dim ingTable As DataTable = Database.ExecuteQuery(ingQuery)
+            Dim ingTable As DataTable = modDB.ExecuteQuery(ingQuery)
             Dim productIngredients As New Dictionary(Of Integer, List(Of ProductIngredient))
             
             If ingTable IsNot Nothing Then

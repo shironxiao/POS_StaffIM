@@ -4,13 +4,18 @@ Imports System.Threading.Tasks
 
 Public Class ReservationRepository
     Public Function GetTodayReservations() As List(Of Reservation)
-        ' Show recently confirmed reservations (regardless of event date)
-        Dim query As String = "SELECT r.ReservationID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, r.EventTime, r.NumberOfGuests, r.ReservationStatus " &
+        Return GetTodayReservationsPaged(10, 0)
+    End Function
+
+    Public Function GetTodayReservationsPaged(limit As Integer, offset As Integer) As List(Of Reservation)
+        ' Show reservations for today (EventDate) with Accepted or Confirmed status
+        Dim query As String = "SELECT r.ReservationID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, r.EventTime, r.NumberOfGuests, r.ReservationStatus, " &
+                              "COALESCE((SELECT SUM(ri.Quantity * ri.UnitPrice) FROM reservation_items ri WHERE ri.ReservationID = r.ReservationID), 0) AS TotalPrice, " &
+                              "COALESCE((SELECT SUM(ri.Quantity * p.PrepTime) FROM reservation_items ri JOIN products p ON ri.ProductName = p.ProductName WHERE ri.ReservationID = r.ReservationID), 0) AS PrepTime " &
                               "FROM reservations r " &
                               "LEFT JOIN customers c ON r.CustomerID = c.CustomerID " &
-                              "WHERE r.ReservationStatus = 'Confirmed' " &
-                              "ORDER BY r.UpdatedDate DESC " &
-                              "LIMIT 10"
+                              "WHERE DATE(r.EventDate) = CURDATE() AND r.ReservationStatus IN ('Accepted', 'Confirmed') " &
+                              "ORDER BY r.EventTime ASC LIMIT " & limit & " OFFSET " & offset
         
         Return GetReservations(query)
     End Function
@@ -19,7 +24,7 @@ Public Class ReservationRepository
         Dim query As String = "SELECT r.ReservationID, r.CustomerID, r.FullName, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, c.Email, r.ContactNumber, r.AssignedStaffID, r.NumberOfGuests, r.EventDate, r.EventTime, r.EventType, r.ReservationStatus, r.ProductSelection, r.SpecialRequests, r.DeliveryAddress, r.DeliveryOption, COALESCE((SELECT SUM(TotalPrice) FROM reservation_items WHERE ReservationID = r.ReservationID), 0) AS TotalPrice " &
                               "FROM reservations r " &
                               "LEFT JOIN customers c ON r.CustomerID = c.CustomerID " &
-                              "ORDER BY r.EventDate DESC, r.EventTime DESC LIMIT 50"
+                              "ORDER BY r.ReservationID DESC LIMIT 50"
         
         Return GetReservations(query)
     End Function
@@ -31,9 +36,60 @@ Public Class ReservationRepository
         Return Await Task.Run(Function() GetAllReservations())
     End Function
 
+    ''' <summary>
+    ''' Gets reservations with pagination support
+    ''' </summary>
+    Public Function GetAllReservationsPaged(limit As Integer, offset As Integer) As List(Of Reservation)
+        Dim query As String = "SELECT r.ReservationID, r.CustomerID, r.FullName, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, c.Email, r.ContactNumber, r.AssignedStaffID, r.NumberOfGuests, r.EventDate, r.EventTime, r.EventType, r.ReservationStatus, r.ProductSelection, r.SpecialRequests, r.DeliveryAddress, r.DeliveryOption, COALESCE((SELECT SUM(TotalPrice) FROM reservation_items WHERE ReservationID = r.ReservationID), 0) AS TotalPrice " &
+                              "FROM reservations r " &
+                              "LEFT JOIN customers c ON r.CustomerID = c.CustomerID " &
+                              "ORDER BY r.ReservationID DESC LIMIT " & limit & " OFFSET " & offset
+        
+        Return GetReservations(query)
+    End Function
+
+    ''' <summary>
+    ''' Gets total count of reservations for pagination
+    ''' </summary>
+    Public Function GetTotalReservationsCount() As Integer
+        Dim query As String = "SELECT COUNT(*) FROM reservations"
+        Dim result As Object = modDB.ExecuteScalar(query)
+        If result IsNot Nothing AndAlso IsNumeric(result) Then
+            Return CInt(result)
+        End If
+        Return 0
+    End Function
+
+    ''' <summary>
+    ''' Gets total count of today's accepted/confirmed reservations
+    ''' </summary>
+    Public Function GetTotalTodayReservationsCount() As Integer
+        Dim query As String = "SELECT COUNT(*) FROM reservations WHERE DATE(EventDate) = CURDATE() AND ReservationStatus IN ('Accepted', 'Confirmed')"
+        Dim result As Object = modDB.ExecuteScalar(query)
+        If result IsNot Nothing AndAlso IsNumeric(result) Then
+            Return CInt(result)
+        End If
+        Return 0
+    End Function
+
+    ''' <summary>
+    ''' Async version of GetTodayReservationsPaged
+    ''' </summary>
+    Public Async Function GetTodayReservationsPagedAsync(limit As Integer, offset As Integer) As Task(Of List(Of Reservation))
+        Return Await Task.Run(Function() GetTodayReservationsPaged(limit, offset))
+    End Function
+
+    ''' <summary>
+    ''' Async version of GetTotalTodayReservationsCount
+    ''' </summary>
+    Public Async Function GetTotalTodayReservationsCountAsync() As Task(Of Integer)
+        Return Await Task.Run(Function() GetTotalTodayReservationsCount())
+    End Function
+
+
     Private Function GetReservations(query As String) As List(Of Reservation)
         Dim reservations As New List(Of Reservation)
-        Dim table As DataTable = Database.ExecuteQuery(query)
+        Dim table As DataTable = modDB.ExecuteQuery(query)
         
         If table IsNot Nothing Then
             For Each row As DataRow In table.Rows
@@ -70,6 +126,15 @@ Public Class ReservationRepository
         ' First ensure customer exists (simplified logic, ideally should be in CustomerRepository)
         ' For now, we assume the CustomerID is already resolved or we use the helper in Database class
         
+        ' Auto-generate ProductSelection string if missing but items exist
+        If String.IsNullOrEmpty(reservation.ProductSelection) AndAlso reservation.Items IsNot Nothing AndAlso reservation.Items.Count > 0 Then
+            Dim parts As New List(Of String)
+            For Each item In reservation.Items
+                parts.Add($"{item.ProductName} ({item.Quantity})")
+            Next
+            reservation.ProductSelection = String.Join(", ", parts)
+        End If
+
         Dim query As String = "INSERT INTO reservations (CustomerID, FullName, AssignedStaffID, ReservationType, EventType, EventDate, EventTime, NumberOfGuests, ProductSelection, SpecialRequests, ReservationStatus, DeliveryAddress, DeliveryOption, ContactNumber) VALUES (@customerID, @fullName, @assignedStaffID, @reservationType, @eventType, @eventDate, @eventTime, @numberOfGuests, @productSelection, @specialRequests, @reservationStatus, @deliveryAddress, @deliveryOption, @contactNumber)"
         
         Dim parameters As MySqlParameter() = {
@@ -89,8 +154,8 @@ Public Class ReservationRepository
             New MySqlParameter("@contactNumber", reservation.ContactNumber)
         }
 
-        If Database.ExecuteNonQuery(query, parameters) > 0 Then
-            Dim newID As Object = Database.ExecuteScalar("SELECT LAST_INSERT_ID()")
+        If modDB.ExecuteNonQuery(query, parameters) > 0 Then
+            Dim newID As Object = modDB.ExecuteScalar("SELECT LAST_INSERT_ID()")
             If newID IsNot Nothing AndAlso IsNumeric(newID) Then
                 Dim reservationID As Integer = CInt(newID)
                 
@@ -99,8 +164,8 @@ Public Class ReservationRepository
                     AddReservationItem(reservationID, item)
                 Next
                 
-                ' Deduct inventory if confirmed
-                If reservation.ReservationStatus = "Confirmed" Then
+                ' Deduct inventory if confirmed or accepted
+                If reservation.ReservationStatus = "Confirmed" OrElse reservation.ReservationStatus = "Accepted" Then
                     Try
                         Dim inventoryService As New InventoryService()
                         inventoryService.DeductInventoryForReservation(reservationID)
@@ -125,7 +190,7 @@ Public Class ReservationRepository
             New MySqlParameter("@unitPrice", item.UnitPrice),
             New MySqlParameter("@totalPrice", item.TotalPrice)
         }
-        Database.ExecuteNonQuery(query, parameters)
+        modDB.ExecuteNonQuery(query, parameters)
     End Sub
 
     Public Function UpdateReservationStatus(reservationID As Integer, status As String) As Boolean
@@ -135,10 +200,10 @@ Public Class ReservationRepository
             New MySqlParameter("@reservationID", reservationID)
         }
         
-        Dim success As Boolean = Database.ExecuteNonQuery(query, parameters) > 0
+        Dim success As Boolean = modDB.ExecuteNonQuery(query, parameters) > 0
         
-        ' If status changed to Confirmed, deduct inventory
-        If success AndAlso status = "Confirmed" Then
+        ' If status changed to Confirmed or Accepted, deduct inventory
+        If success AndAlso (status = "Confirmed" OrElse status = "Accepted") Then
             Try
                 Dim inventoryService As New InventoryService()
                 inventoryService.DeductInventoryForReservation(reservationID)
@@ -151,8 +216,8 @@ Public Class ReservationRepository
     End Function
     
     Public Function GetTodayReservationsCount() As Integer
-        Dim query As String = "SELECT COUNT(*) FROM reservations WHERE DATE(EventDate) = CURDATE()"
-        Dim result As Object = Database.ExecuteScalar(query)
+        Dim query As String = "SELECT COUNT(*) FROM reservations WHERE DATE(EventDate) = CURDATE() AND ReservationStatus IN ('Accepted', 'Confirmed')"
+        Dim result As Object = modDB.ExecuteScalar(query)
         If result IsNot Nothing AndAlso IsNumeric(result) Then
             Return CInt(result)
         End If
@@ -166,7 +231,7 @@ Public Class ReservationRepository
             New MySqlParameter("@reservationID", reservationID)
         }
         
-        Dim table As DataTable = Database.ExecuteQuery(query, parameters)
+        Dim table As DataTable = modDB.ExecuteQuery(query, parameters)
         If table IsNot Nothing Then
             For Each row As DataRow In table.Rows
                 items.Add(New ReservationItem With {

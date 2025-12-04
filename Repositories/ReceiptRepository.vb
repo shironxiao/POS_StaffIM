@@ -41,11 +41,11 @@ Public Class ReceiptRepository
                 New MySqlParameter("@CreatedDate", DateTime.Now)
             }
 
-            Database.ExecuteNonQuery(query, parameters)
+            modDB.ExecuteNonQuery(query, parameters)
 
             ' Get the last inserted ID
             Dim lastIdQuery As String = "SELECT LAST_INSERT_ID()"
-            Dim result As DataTable = Database.ExecuteQuery(lastIdQuery)
+            Dim result As DataTable = modDB.ExecuteQuery(lastIdQuery)
 
             If result IsNot Nothing AndAlso result.Rows.Count > 0 Then
                 Return Convert.ToInt32(result.Rows(0)(0))
@@ -89,7 +89,7 @@ Public Class ReceiptRepository
                     New MySqlParameter("@CreatedDate", DateTime.Now)
                 }
 
-                Database.ExecuteNonQuery(query, parameters)
+                modDB.ExecuteNonQuery(query, parameters)
             Next
         Catch ex As Exception
             Throw New Exception($"Error inserting receipt items: {ex.Message}", ex)
@@ -115,7 +115,7 @@ Public Class ReceiptRepository
                 New MySqlParameter("@ProductName", productName)
             }
 
-            Dim result As DataTable = Database.ExecuteQuery(query, parameters)
+            Dim result As DataTable = modDB.ExecuteQuery(query, parameters)
 
             If result IsNot Nothing AndAlso result.Rows.Count > 0 Then
                 Return result.Rows(0)("ReferenceNumber").ToString()
@@ -142,7 +142,7 @@ Public Class ReceiptRepository
                 WHERE ReceiptID = @ReceiptID"
 
             Dim headerParams As MySqlParameter() = {New MySqlParameter("@ReceiptID", receiptID)}
-            Dim headerTable As DataTable = Database.ExecuteQuery(headerQuery, headerParams)
+            Dim headerTable As DataTable = modDB.ExecuteQuery(headerQuery, headerParams)
 
             If headerTable Is Nothing OrElse headerTable.Rows.Count = 0 Then
                 Return Nothing
@@ -158,7 +158,7 @@ Public Class ReceiptRepository
                 WHERE ReceiptID = @ReceiptID
                 ORDER BY ReceiptItemID"
 
-            Dim itemsTable As DataTable = Database.ExecuteQuery(itemsQuery, headerParams)
+            Dim itemsTable As DataTable = modDB.ExecuteQuery(itemsQuery, headerParams)
 
             ' Build receipt data object
             Dim receipt As New ReceiptData With {
