@@ -176,15 +176,14 @@ Public Class InventoryService
     ''' <summary>
     ''' Gets all ingredients required for a product.
     ''' </summary>
+    ''' <summary>
+    ''' Gets all ingredients required for a product.
+    ''' </summary>
     Private Function GetProductIngredients(productName As String) As List(Of ProductIngredient)
-        Dim cacheKey As String = $"ProductIngredients_{productName}"
-        Dim ingredients As List(Of ProductIngredient) = DataCacheService.GetItem(Of List(Of ProductIngredient))(cacheKey)
+        ' Logic refactored to remove legacy DataCacheService dependency.
+        ' Direct database query ensures real-time accuracy.
         
-        If ingredients IsNot Nothing Then
-            Return ingredients
-        End If
-        
-        ingredients = New List(Of ProductIngredient)
+        Dim ingredients As New List(Of ProductIngredient)
         
         Dim query As String = "SELECT pi.ProductIngredientID, pi.ProductID, pi.IngredientID, pi.QuantityUsed, pi.UnitType, i.IngredientName " &
                               "FROM product_ingredients pi " &
@@ -209,9 +208,6 @@ Public Class InventoryService
                 })
             Next
         End If
-        
-        ' Cache for 30 minutes (recipes rarely change)
-        DataCacheService.SetItem(cacheKey, ingredients, 30)
         
         Return ingredients
     End Function

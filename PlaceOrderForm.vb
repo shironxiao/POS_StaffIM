@@ -6,6 +6,7 @@ Imports System.Reflection
 Public Class PlaceOrderForm
     Private productRepository As New ProductRepository()
     Private orderRepository As New OrderRepository()
+    Private inventoryService As New InventoryService()
 
     ' Store current order items
     Private orderItems As New List(Of OrderItem)
@@ -40,8 +41,13 @@ Public Class PlaceOrderForm
             ' Show loading indicator
             ShowLoadingIndicator(True)
 
-' Load products in background thread
+            ' Load products in background thread
             Dim products As List(Of Product) = Await productRepository.GetProductsByCategoryAsync(category)
+
+            ' Validate inventory status for all loaded products
+            Await Task.Run(Sub()
+                               inventoryService.CheckInventoryForProducts(products)
+                           End Sub)
 
             ' Update UI on UI thread
             DisplayProducts(products)
@@ -79,6 +85,9 @@ Public Class PlaceOrderForm
             Else
                 products = productRepository.GetProductsByCategory(category)
             End If
+
+            ' Validate inventory status
+            inventoryService.CheckInventoryForProducts(products)
 
             DisplayProducts(products)
         Catch ex As Exception
@@ -392,8 +401,15 @@ Public Class PlaceOrderForm
 
     Private Sub UpdateTotal()
         Dim total As Decimal = orderItems.Sum(Function(i) i.UnitPrice * i.Quantity)
+        
+        ' Update generic label if it exists
         If lblTotalValue IsNot Nothing Then
             lblTotalValue.Text = $"₱{total:F2}"
+        End If
+        
+        ' Update Label41 specifically as requested
+        If Label41 IsNot Nothing Then
+            Label41.Text = $"₱{total:F2}"
         End If
     End Sub
 
@@ -544,12 +560,21 @@ Public Class PlaceOrderForm
                 .OrderTime = DateTime.Now.TimeOfDay,
                 .ItemsOrderedCount = itemsCount,
                 .TotalAmount = totalAmount,
+                .EmployeeID = CurrentSession.EmployeeID, ' Set EmployeeID
                 .OrderStatus = "Preparing"
             }
 
             Dim orderID As Integer = orderRepository.CreateOrder(newOrder, orderItems)
 
             If orderID > 0 Then
+                ' Deduct inventory for the order
+                Try
+                    inventoryService.DeductInventoryForOrder(orderID, orderItems)
+                Catch invEx As Exception
+                    System.Diagnostics.Debug.WriteLine($"Inventory deduction failed for Order #{orderID}: {invEx.Message}")
+                    ' Continue even if inventory deduction fails - order is already created
+                End Try
+                
                 Try
                     ' Generate order number in format VT-YYYY-NNNNNN
                     Dim orderNumber As String = $"VT-{DateTime.Now:yyyy}-{orderID:D6}"
@@ -566,6 +591,9 @@ Public Class PlaceOrderForm
                     ' Generate PDF receipt
                     Dim pdfGenerator As New ReceiptPDFGenerator()
                     Dim pdfPath As String = pdfGenerator.GenerateReceipt(receiptID)
+                    
+                    ' Update Receipt Number in Orders table
+                    orderRepository.UpdateOrderReceiptNumber(orderID, orderNumber)
 
                     ' Show success message
                     MessageBox.Show(

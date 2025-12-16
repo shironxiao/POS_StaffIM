@@ -17,6 +17,7 @@ Public Class ReportRepository
     Public Function GetTodayActivityPaged(limit As Integer, offset As Integer) As List(Of ReportActivityItem)
         Dim items As New List(Of ReportActivityItem)
         
+        ' Buffered: Load All Today's Activity
         Dim query As String = "SELECT 'Order' as Type, OrderID as ID, ItemsOrderedCount as Description, OrderTime as Time, TotalAmount as Amount, OrderStatus as Status " &
                               "FROM orders WHERE DATE(OrderDate) = CURDATE() AND OrderStatus != 'Cancelled' " &
                               "UNION ALL " &
@@ -24,12 +25,10 @@ Public Class ReportRepository
                               "COALESCE((SELECT SUM(ri.Quantity * ri.UnitPrice) FROM reservation_items ri WHERE ri.ReservationID = reservations.ReservationID), 0) as Amount, " &
                               "ReservationStatus as Status " &
                               "FROM reservations WHERE DATE(EventDate) = CURDATE() AND ReservationStatus IN ('Accepted', 'Confirmed') " &
-                              "ORDER BY Time DESC LIMIT @limit OFFSET @offset"
+                              "ORDER BY Time DESC"
                               
-        Dim parameters As MySqlParameter() = {
-            New MySqlParameter("@limit", limit),
-            New MySqlParameter("@offset", offset)
-        }
+        Dim parameters As MySqlParameter() = {}
+
         
         Dim table As DataTable = modDB.ExecuteQuery(query, parameters)
         

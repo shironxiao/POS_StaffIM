@@ -3,107 +3,167 @@ Imports System.Collections.Generic
 Imports System.Threading.Tasks
 
 Public Class ProductRepository
-    ' Cache keys
-    Private Const CACHE_KEY_PRODUCTS As String = "AllProducts"
-
 
     ''' <summary>
-    ''' Gets all products with caching support
+    ''' Gets products with pagination and search support using Stored Procedure
     ''' </summary>
-    ''' <summary>
-    ''' Gets all products with caching support
-    ''' </summary>
-    Public Function GetAllProducts() As List(Of Product)
-        Dim products As List(Of Product) = DataCacheService.GetItem(Of List(Of Product))(CACHE_KEY_PRODUCTS)
-        
-        If products Is Nothing Then
-            ' Cache is invalid or empty, fetch from database
-            products = GetProducts("SELECT ProductID, ProductName, Category, Description, Price, Availability, ServingSize, ProductCode, PopularityTag, MealTime, OrderCount, Image, PrepTime FROM products WHERE Availability = 'Available' ORDER BY ProductName")
-            
-            ' Cache for 5 minutes
-            DataCacheService.SetItem(CACHE_KEY_PRODUCTS, products, 5)
-        End If
-
-        ' Return a copy to prevent external modification of cached list
-        Return New List(Of Product)(products)
-    End Function
-
-    ''' <summary>
-    ''' Async version of GetAllProducts for non-blocking UI
-    ''' </summary>
-    Public Async Function GetAllProductsAsync() As Task(Of List(Of Product))
-        Return Await Task.Run(Function() GetAllProducts())
-    End Function
-
-    ''' <summary>
-    ''' Gets products by category from cache (faster)
-    ''' </summary>
-    Public Function GetProductsByCategory(category As String) As List(Of Product)
-        ' Get from cache if available
-        Dim allProducts = GetAllProducts()
-        
-        If category = "All" Then
-            Return allProducts
-        End If
-
-        ' Filter in memory (much faster than DB query)
-        Return allProducts.Where(Function(p) p.Category = category).ToList()
-    End Function
-
-    ''' <summary>
-    ''' Async version of GetProductsByCategory
-    ''' </summary>
-    Public Async Function GetProductsByCategoryAsync(category As String) As Task(Of List(Of Product))
-        Return Await Task.Run(Function() GetProductsByCategory(category))
-    End Function
-
-    ''' <summary>
-    ''' Forces cache refresh (call when products are updated)
-    ''' </summary>
-    ''' <summary>
-    ''' Forces cache refresh (call when products are updated)
-    ''' </summary>
-    Public Sub RefreshCache()
-        DataCacheService.Invalidate(CACHE_KEY_PRODUCTS)
-    End Sub
-
-    ''' <summary>
-    ''' Preloads product cache in background
-    ''' </summary>
-    Public Async Function PreloadCacheAsync() As Task
-        Await GetAllProductsAsync()
-    End Function
-
-    Private Function GetProducts(query As String, Optional parameters As MySqlParameter() = Nothing) As List(Of Product)
+    Public Function GetProductsPaged(limit As Integer, offset As Integer, Optional category As String = "All", Optional search As String = "") As List(Of Product)
         Dim products As New List(Of Product)
-        Dim table As DataTable = modDB.ExecuteQuery(query, parameters)
-
+        
+        ' Use the optimized wrapper stored procedure created in performance_procedures.sql
+        ' Parameters: p_limit, p_offset, p_category, p_search
+        
+        ' Note: Parameter names in MySqlCommand must match calling context or be strictly positional if using ? syntax.
+        ' Since we are using parameterized generic ExecuteQuery helper might be raw.
+        ' Let's construct a direct CALL.
+        
+        ' Handle optional parameters for SQL injection ease (though SP handles this, passing clean strings is safest)
+        Dim safeCategory As String = If(category = "All", "", category)
+        Dim safeSearch As String = If(String.IsNullOrEmpty(search), "", search)
+        
+        ' Using simpler string interpolation for the CALL (values sanitized by logic or assume internal safety for now, 
+        ' but ideally should use parameterized command if modDB supports it well for SPs)
+        ' Given modDB.ExecuteQuery logic, string building is consistent with previous patterns in this codebase.
+        
+        ' Warning: Concatenating strings into SQL is unsafe. 
+        ' We will use parameterized call logic if possible, or QUOTE values.
+        ' However, modDB helper is simple. Let's use string building with proper quoting logic handled in the SP (it uses QUOTE()).
+        ' Wait, the SP uses QUOTE(p_category). But we need to pass strings TO the SP.
+        
+        Dim query As String = $"CALL GetProductsPaged({limit}, {offset}, '{safeCategory.Replace("'", "''")}', '{safeSearch.Replace("'", "''")}')"
+        
+        Dim table As DataTable = modDB.ExecuteQuery(query)
+        
         If table IsNot Nothing Then
             For Each row As DataRow In table.Rows
-                Dim product As New Product With {
-                    .ProductID = Convert.ToInt32(row("ProductID")),
-                    .ProductName = row("ProductName").ToString(),
-                    .Category = row("Category").ToString(),
-                    .Description = If(IsDBNull(row("Description")), "", row("Description").ToString()),
-                    .Price = Convert.ToDecimal(row("Price")),
-                    .Availability = row("Availability").ToString(),
-                    .ServingSize = If(IsDBNull(row("ServingSize")), "", row("ServingSize").ToString()),
-                    .ProductCode = If(IsDBNull(row("ProductCode")), "", row("ProductCode").ToString()),
-                    .PopularityTag = If(IsDBNull(row("PopularityTag")), "Regular", row("PopularityTag").ToString()),
-                    .MealTime = If(IsDBNull(row("MealTime")), "", row("MealTime").ToString()),
-                    .OrderCount = If(IsDBNull(row("OrderCount")), 0, Convert.ToInt32(row("OrderCount"))),
-                    .Image = If(IsDBNull(row("Image")), "", row("Image").ToString()),
-                    .PrepTime = If(IsDBNull(row("PrepTime")), 0, Convert.ToInt32(row("PrepTime")))
-                }
-
+                Dim product As New Product()
+                product.ProductID = Convert.ToInt32(row("ProductID"))
+                product.ProductName = row("ProductName").ToString()
+                product.Category = row("Category").ToString()
+                product.Price = Convert.ToDecimal(row("Price"))
+                product.Availability = row("Availability").ToString()
+                product.Image = If(IsDBNull(row("Image")), "", row("Image").ToString())
+                ' Check if column exists to prevent crash if DB is not updated
+                If table.Columns.Contains("PrepTime") Then
+                    product.PrepTime = If(IsDBNull(row("PrepTime")), 0, Convert.ToInt32(row("PrepTime")))
+                End If
+                
                 products.Add(product)
             Next
         End If
-
-        ' Check inventory availability for all fetched products
-        Dim inventoryService As New InventoryService()
-        inventoryService.CheckInventoryForProducts(products)
-
+        
         Return products
     End Function
+
+    ''' <summary>
+    ''' Async version of GetProductsPaged
+    ''' </summary>
+    Public Async Function GetProductsPagedAsync(limit As Integer, offset As Integer, Optional category As String = "All", Optional search As String = "") As Task(Of List(Of Product))
+        Return Await Task.Run(Function() GetProductsPaged(limit, offset, category, search))
+    End Function
+
+    ''' <summary>
+    ''' Gets total count of products for pagination
+    ''' </summary>
+    Public Function GetTotalProductsCount(Optional category As String = "All", Optional search As String = "") As Integer
+        Dim whereClause As String = "1=1" ' Allow all products by default
+        
+        If category <> "All" AndAlso Not String.IsNullOrEmpty(category) Then
+             whereClause &= " AND Category = '" & category.Replace("'", "''") & "'"
+        End If
+        
+        If Not String.IsNullOrEmpty(search) Then
+            whereClause &= " AND ProductName LIKE '%" & search.Replace("'", "''") & "%'"
+        End If
+        
+        
+        Dim query As String = $"SELECT COUNT(*) AS TotalCount FROM products WHERE {whereClause}"
+        
+        Dim result As Object = modDB.ExecuteScalar(query)
+        If result IsNot Nothing AndAlso IsNumeric(result) Then
+            Return Convert.ToInt32(result)
+        End If
+        Return 0
+    End Function
+
+    ''' <summary>
+    ''' Legacy method support - Redirects to paged fetch (Fetching all is dangerous now)
+    ''' Returning first 100 to avoid breaking UI that expects a list.
+    ''' </summary>
+    ''' <summary>
+    ''' Load ALL products for buffered/in-memory use.
+    ''' </summary>
+    Public Function GetAllProducts() As List(Of Product)
+        Dim products As New List(Of Product)
+        Dim query As String = "SELECT * FROM products" ' Load everything
+        
+        Dim table As DataTable = modDB.ExecuteQuery(query)
+        
+        If table IsNot Nothing Then
+            For Each row As DataRow In table.Rows
+                Dim product As New Product()
+                product.ProductID = Convert.ToInt32(row("ProductID"))
+                product.ProductName = row("ProductName").ToString()
+                product.Category = row("Category").ToString()
+                product.Price = Convert.ToDecimal(row("Price"))
+                product.Availability = row("Availability").ToString()
+                product.Image = If(IsDBNull(row("Image")), "", row("Image").ToString())
+                ' Check if column exists to prevent crash if DB is not updated
+                If table.Columns.Contains("PrepTime") Then
+                    product.PrepTime = If(IsDBNull(row("PrepTime")), 0, Convert.ToInt32(row("PrepTime")))
+                End If
+                
+                products.Add(product)
+            Next
+        End If
+        
+        Return products
+    End Function
+    
+    Public Async Function GetAllProductsAsync() As Task(Of List(Of Product))
+         ' Use the Sync implementation which uses SELECT * (ensuring PrepTime is loaded)
+         Return Await Task.Run(Function() GetAllProducts()) 
+    End Function
+
+    Public Function GetProductsByCategory(category As String) As List(Of Product)
+        If category = "All" Then Return GetAllProducts()
+        
+        Dim products As New List(Of Product)
+        Dim query As String = "SELECT * FROM products WHERE Category = '" & category.Replace("'", "''") & "'"
+        
+        Dim table As DataTable = modDB.ExecuteQuery(query)
+        If table IsNot Nothing Then
+            For Each row As DataRow In table.Rows
+                Dim product As New Product()
+                product.ProductID = Convert.ToInt32(row("ProductID"))
+                product.ProductName = row("ProductName").ToString()
+                product.Category = row("Category").ToString()
+                product.Price = Convert.ToDecimal(row("Price"))
+                product.Availability = row("Availability").ToString()
+                product.Image = If(IsDBNull(row("Image")), "", row("Image").ToString())
+                ' Check if column exists to prevent crash if DB is not updated
+                If table.Columns.Contains("PrepTime") Then
+                    product.PrepTime = If(IsDBNull(row("PrepTime")), 0, Convert.ToInt32(row("PrepTime")))
+                End If
+                
+                products.Add(product)
+            Next
+        End If
+        Return products
+    End Function
+    
+    Public Async Function GetProductsByCategoryAsync(category As String) As Task(Of List(Of Product))
+         ' Use the Sync implementation which uses SELECT *
+         Return Await Task.Run(Function() GetProductsByCategory(category))
+    End Function
+
+    Public Sub RefreshCache()
+        ' No-op: Caching service removed.
+    End Sub
+
+    Public Async Function PreloadCacheAsync() As Task
+        ' No-op
+        Await Task.CompletedTask
+    End Function
+    
 End Class

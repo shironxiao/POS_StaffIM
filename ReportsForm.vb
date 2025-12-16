@@ -4,13 +4,13 @@ Public Class ReportsForm
     Private orderRepository As New OrderRepository()
     Private reservationRepository As New ReservationRepository()
     Private reportRepository As New ReportRepository()
-    
+
     ' Pagination variables
     Private currentPage As Integer = 1
     Private pageSize As Integer = 100 ' Updated to 100
     Private totalPages As Integer = 1
     Private totalRecords As Integer = 0
-    
+
     ' Pagination controls
     Private pnlPagination As Panel
     Private btnPrevPage As Button
@@ -23,6 +23,12 @@ Public Class ReportsForm
         LoadDailyReports()
     End Sub
 
+    Private Sub ReportsForm_VisibleChanged(sender As Object, e As EventArgs) Handles MyBase.VisibleChanged
+        If Me.Visible AndAlso Not Me.Disposing Then
+            LoadDailyReports()
+        End If
+    End Sub
+
     Private Sub InitializePaginationControls()
         ' Create pagination panel
         pnlPagination = New Panel With {
@@ -30,7 +36,7 @@ Public Class ReportsForm
             .Dock = DockStyle.Bottom,
             .BackColor = Color.WhiteSmoke
         }
-        
+
         ' Previous Button
         btnPrevPage = New Button With {
             .Text = "< Previous",
@@ -41,7 +47,7 @@ Public Class ReportsForm
             .Font = New Font("Segoe UI", 9)
         }
         AddHandler btnPrevPage.Click, AddressOf btnPrevPage_Click
-        
+
         ' Next Button
         btnNextPage = New Button With {
             .Text = "Next >",
@@ -52,7 +58,7 @@ Public Class ReportsForm
             .Font = New Font("Segoe UI", 9)
         }
         AddHandler btnNextPage.Click, AddressOf btnNextPage_Click
-        
+
         ' Page Number TextBox (Editable)
         txtPageNumber = New TextBox With {
             .Text = "1",
@@ -66,21 +72,21 @@ Public Class ReportsForm
 
         ' Total Pages Label
         lblTotalPages = New Label With {
-            .Text = "of 1",
+            .Text = "Page 1 of 1",
             .AutoSize = False,
-            .Size = New Size(70, 25),
+            .Size = New Size(100, 25),
             .TextAlign = ContentAlignment.MiddleLeft,
             .Font = New Font("Segoe UI", 10, FontStyle.Bold),
             .Location = New Point(txtPageNumber.Right + 5, 8)
         }
-        
+
         ' Add Resize Handler to keep buttons in place
         AddHandler pnlPagination.Resize, Sub(s, ev)
                                              btnNextPage.Location = New Point(pnlPagination.Width - 120, 8)
                                              txtPageNumber.Location = New Point((pnlPagination.Width - 120) \ 2, 8)
                                              lblTotalPages.Location = New Point(txtPageNumber.Right + 5, 8)
                                          End Sub
-        
+
         pnlPagination.Controls.AddRange({btnPrevPage, btnNextPage, txtPageNumber, lblTotalPages})
         ' pnlMain.Controls.Add(pnlPagination) ' Removed as pnlMain does not exist
         Me.Controls.Add(pnlPagination)
@@ -176,17 +182,17 @@ Public Class ReportsForm
         Try
             ' Calculate offset
             Dim offset As Integer = (currentPage - 1) * pageSize
-            
+
             ' Get totals
             totalRecords = reportRepository.GetTotalTodayActivityCount()
             totalPages = Math.Max(1, CInt(Math.Ceiling(totalRecords / pageSize)))
-            
+
             ' Get combined paged data
             Dim items As List(Of ReportActivityItem) = reportRepository.GetTodayActivityPaged(pageSize, offset)
-            
+
             DisplayTodayActivity(items)
             UpdatePaginationControls()
-            
+
         Catch ex As Exception
             Console.WriteLine($"Error loading today's activity: {ex.Message}")
         End Try
@@ -195,7 +201,7 @@ Public Class ReportsForm
     Private Sub UpdatePaginationControls()
         If txtPageNumber IsNot Nothing Then
             txtPageNumber.Text = currentPage.ToString()
-            lblTotalPages.Text = $"of {totalPages}"
+            lblTotalPages.Text = $"Page {currentPage} of {totalPages}"
             btnPrevPage.Enabled = (currentPage > 1)
             btnNextPage.Enabled = (currentPage < totalPages)
         End If
@@ -215,7 +221,7 @@ Public Class ReportsForm
         If Integer.TryParse(txtPageNumber.Text, newPage) Then
             If newPage < 1 Then newPage = 1
             If newPage > totalPages Then newPage = totalPages
-            
+
             If newPage <> currentPage Then
                 currentPage = newPage
                 LoadTodayOrders()
@@ -226,7 +232,7 @@ Public Class ReportsForm
             txtPageNumber.Text = currentPage.ToString()
         End If
     End Sub
-    
+
     Private Sub btnPrevPage_Click(sender As Object, e As EventArgs)
         If currentPage > 1 Then
             currentPage -= 1
@@ -254,7 +260,7 @@ Public Class ReportsForm
         tlpOrdersRows.RowCount = 0
         pnlTableHeader.Controls.Clear()
         pnlTableTotal.Controls.Clear()
-        
+
         If items.Count = 0 Then
             tlpOrdersRows.RowCount = 1
             tlpOrdersRows.RowStyles.Add(New RowStyle(SizeType.Absolute, 50.0F))
@@ -278,7 +284,7 @@ Public Class ReportsForm
         For Each item In items
             AddActivityRow(item)
         Next
-        
+
         ' Populate total panel (Requires re-calculating full totals independently of page)
         ' We can just reuse LoadTodaySales's logic or recalc sum here?
         ' Actually the requirement for "Total" row usually implies total of displayed items OR total for day.
@@ -290,7 +296,7 @@ Public Class ReportsForm
         ' I will remove the bottom total panel logic from *here* and let the top card handle the "Total Sales".
         ' OR I can display "Page Total". Let's omit the footer total for now as it's redundant with the top card "Today's Sales".
         ' Wait, visual consistency. I'll show Page Total.
-        
+
         Dim pageTotal As Decimal = items.Sum(Function(i) i.Amount)
         PopulateTotalPanel(pageTotal)
     End Sub
@@ -302,19 +308,20 @@ Public Class ReportsForm
         pnlTableHeader.Controls.Clear()
 
         ' Use resize handler for responsive column positions
+        ' Align header with the data rows container (tlpOrdersRows) to account for scrollbars
         AddHandler pnlTableHeader.Resize, Sub(sender, e)
-                                              Dim panel As Panel = CType(sender, Panel)
-                                              Dim width As Integer = panel.Width - 40 ' Account for padding
-
-                                              ' Update label positions based on panel width
-                                              If panel.Controls.Count >= 5 Then
-                                                  panel.Controls(0).Left = 20  ' Order ID - 0%
-                                                  panel.Controls(1).Left = CInt(width * 0.15) + 20  ' Type - 15%
-                                                  panel.Controls(2).Left = CInt(width * 0.35) + 20  ' Items - 35%
-                                                  panel.Controls(3).Left = CInt(width * 0.55) + 20  ' Time - 55%
-                                                  panel.Controls(4).Left = CInt(width * 0.75) + 20  ' Amount - 75%
-                                              End If
+                                              Dim headerPanel As Panel = CType(sender, Panel)
+                                              ' Use the width of the rows container if available, otherwise panel width
+                                              Dim targetWidth As Integer = If(tlpOrdersRows.Width > 0, tlpOrdersRows.ClientSize.Width, headerPanel.Width)
+                                              UpdateHeaderLayout(headerPanel, targetWidth)
                                           End Sub
+
+        ' Also update header when the rows container resizes (e.g. scrollbar appears/disappears)
+        AddHandler tlpOrdersRows.Resize, Sub(sender, e)
+                                             If pnlTableHeader.Controls.Count > 0 Then
+                                                 UpdateHeaderLayout(pnlTableHeader, tlpOrdersRows.ClientSize.Width)
+                                             End If
+                                         End Sub
 
         ' Column headers
         Dim lblOrderID As New Label With {
@@ -353,6 +360,24 @@ Public Class ReportsForm
         }
 
         pnlTableHeader.Controls.AddRange({lblOrderID, lblType, lblItems, lblTime, lblAmount})
+
+        ' Trigger initial layout using rows container width
+        UpdateHeaderLayout(pnlTableHeader, tlpOrdersRows.ClientSize.Width)
+    End Sub
+
+    Private Sub UpdateHeaderLayout(panel As Panel, Optional specificWidth As Integer = -1)
+        ' Use specific width if provided, otherwise panel width
+        Dim baseWidth As Integer = If(specificWidth > -1, specificWidth, panel.Width)
+        Dim width As Integer = baseWidth - 40 ' Account for padding
+        
+        ' Update label positions based on width
+        If panel.Controls.Count >= 5 Then
+            panel.Controls(0).Left = 20  ' Order ID - 0%
+            panel.Controls(1).Left = CInt(width * 0.15) + 20  ' Type - 15%
+            panel.Controls(2).Left = CInt(width * 0.35) + 20  ' Items - 35%
+            panel.Controls(3).Left = CInt(width * 0.55) + 20  ' Time - 55%
+            panel.Controls(4).Left = CInt(width * 0.75) + 20  ' Amount - 75%
+        End If
     End Sub
 
     ''' <summary>
@@ -415,20 +440,14 @@ Public Class ReportsForm
 
         ' Use resize handler for responsive column positions
         AddHandler rowPanel.Resize, Sub(sender, e)
-                                        Dim panel As Panel = CType(sender, Panel)
-                                        Dim width As Integer = panel.Width - 40
-
-                                        If panel.Controls.Count >= 5 Then
-                                            panel.Controls(0).Left = 20
-                                            panel.Controls(1).Left = CInt(width * 0.15) + 20
-                                            panel.Controls(2).Left = CInt(width * 0.35) + 20
-                                            panel.Controls(3).Left = CInt(width * 0.55) + 20
-                                            panel.Controls(4).Left = CInt(width * 0.75) + 20
-                                        End If
+                                        UpdateHeaderLayout(CType(sender, Panel))
                                     End Sub
 
         rowPanel.Controls.AddRange({lblID, lblType, lblDesc, lblTime, lblAmount})
         tlpOrdersRows.Controls.Add(rowPanel, 0, tlpOrdersRows.RowCount - 1)
+
+        ' Force layout update immediately
+        UpdateHeaderLayout(rowPanel)
     End Sub
 
     ''' <summary>
@@ -441,7 +460,7 @@ Public Class ReportsForm
         pnlTableTotal.Controls.Clear()
 
         Dim lblTotalLabel As New Label With {
-            .Text = "Page Total",
+            .Text = "Total",
             .Font = New Font("Segoe UI", 13, FontStyle.Bold),
             .AutoSize = True,
             .Location = New Point(20, 15)

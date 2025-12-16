@@ -27,12 +27,15 @@ Partial Class OnlineOrdersForm
         pnlHeader = New Panel()
         lblSubHeader = New Label()
         lblHeader = New Label()
+        TableLayoutPanel2 = New TableLayoutPanel()
         Panel1 = New Panel()
         btnRefresh = New Button()
+        Panel2 = New Panel()
         ResTemplate = New Panel()
+        Button3 = New Button()
         PictureBox8 = New PictureBox()
         Button2 = New Button()
-        Button1 = New Button()
+        Button4 = New Button()
         PictureBox6 = New PictureBox()
         PictureBox5 = New PictureBox()
         PictureBox3 = New PictureBox()
@@ -43,10 +46,11 @@ Partial Class OnlineOrdersForm
         lblDate2 = New Label()
         lblTime2 = New Label()
         lblCompleted = New Label()
-        Button3 = New Button()
         TableLayoutPanel1.SuspendLayout()
         pnlHeader.SuspendLayout()
+        TableLayoutPanel2.SuspendLayout()
         Panel1.SuspendLayout()
+        Panel2.SuspendLayout()
         ResTemplate.SuspendLayout()
         CType(PictureBox8, ComponentModel.ISupportInitialize).BeginInit()
         CType(PictureBox6, ComponentModel.ISupportInitialize).BeginInit()
@@ -60,7 +64,7 @@ Partial Class OnlineOrdersForm
         TableLayoutPanel1.ColumnCount = 1
         TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100F))
         TableLayoutPanel1.Controls.Add(pnlHeader, 0, 0)
-        TableLayoutPanel1.Controls.Add(Panel1, 0, 1)
+        TableLayoutPanel1.Controls.Add(TableLayoutPanel2, 0, 1)
         TableLayoutPanel1.Dock = DockStyle.Fill
         TableLayoutPanel1.Location = New Point(0, 0)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
@@ -108,17 +112,29 @@ Partial Class OnlineOrdersForm
         lblHeader.TabIndex = 0
         lblHeader.Text = "Manage Orders From Online"
         ' 
+        ' TableLayoutPanel2
+        ' 
+        TableLayoutPanel2.ColumnCount = 1
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100F))
+        TableLayoutPanel2.Controls.Add(Panel2, 0, 1)
+        TableLayoutPanel2.Controls.Add(Panel1, 0, 0)
+        TableLayoutPanel2.Dock = DockStyle.Fill
+        TableLayoutPanel2.Location = New Point(27, 111)
+        TableLayoutPanel2.Name = "TableLayoutPanel2"
+        TableLayoutPanel2.RowCount = 2
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 15F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 85F))
+        TableLayoutPanel2.Size = New Size(1575, 633)
+        TableLayoutPanel2.TabIndex = 2
+        ' 
         ' Panel1
         ' 
-        Panel1.AutoScroll = True
-        Panel1.BackColor = SystemColors.Window
         Panel1.Controls.Add(btnRefresh)
-        Panel1.Controls.Add(ResTemplate)
         Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(27, 111)
+        Panel1.Location = New Point(3, 3)
         Panel1.Name = "Panel1"
-        Panel1.Size = New Size(1575, 633)
-        Panel1.TabIndex = 2
+        Panel1.Size = New Size(1569, 88)
+        Panel1.TabIndex = 0
         ' 
         ' btnRefresh
         ' 
@@ -128,13 +144,23 @@ Partial Class OnlineOrdersForm
         btnRefresh.FlatStyle = FlatStyle.Flat
         btnRefresh.Font = New Font("Segoe UI", 10F, FontStyle.Bold)
         btnRefresh.ForeColor = Color.White
-        btnRefresh.Location = New Point(1359, 33)
+        btnRefresh.Location = New Point(1341, 17)
         btnRefresh.Margin = New Padding(25)
         btnRefresh.Name = "btnRefresh"
         btnRefresh.Size = New Size(154, 46)
-        btnRefresh.TabIndex = 6
+        btnRefresh.TabIndex = 7
         btnRefresh.Text = "Refresh"
         btnRefresh.UseVisualStyleBackColor = False
+        ' 
+        ' Panel2
+        ' 
+        Panel2.AutoScroll = True
+        Panel2.BackColor = SystemColors.Window
+        Panel2.Controls.Add(ResTemplate)
+        Panel2.Location = New Point(3, 97)
+        Panel2.Name = "Panel2"
+        Panel2.Size = New Size(1569, 533)
+        Panel2.TabIndex = 4
         ' 
         ' ResTemplate
         ' 
@@ -143,7 +169,7 @@ Partial Class OnlineOrdersForm
         ResTemplate.Controls.Add(Button3)
         ResTemplate.Controls.Add(PictureBox8)
         ResTemplate.Controls.Add(Button2)
-        ResTemplate.Controls.Add(Button1)
+        ResTemplate.Controls.Add(Button4)
         ResTemplate.Controls.Add(PictureBox6)
         ResTemplate.Controls.Add(PictureBox5)
         ResTemplate.Controls.Add(PictureBox3)
@@ -158,6 +184,18 @@ Partial Class OnlineOrdersForm
         ResTemplate.Name = "ResTemplate"
         ResTemplate.Size = New Size(420, 317)
         ResTemplate.TabIndex = 2
+        ' 
+        ' Button3
+        ' 
+        Button3.BackColor = Color.FromArgb(CByte(224), CByte(224), CByte(224))
+        Button3.FlatStyle = FlatStyle.Flat
+        Button3.Font = New Font("Segoe UI Semibold", 7F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Button3.Location = New Point(178, 255)
+        Button3.Name = "Button3"
+        Button3.Size = New Size(104, 38)
+        Button3.TabIndex = 26
+        Button3.Text = "Reciept preview"
+        Button3.UseVisualStyleBackColor = False
         ' 
         ' PictureBox8
         ' 
@@ -183,17 +221,17 @@ Partial Class OnlineOrdersForm
         Button2.Text = "Pending"
         Button2.UseVisualStyleBackColor = False
         ' 
-        ' Button1
+        ' Button4
         ' 
-        Button1.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
-        Button1.FlatStyle = FlatStyle.Flat
-        Button1.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Button1.Location = New Point(292, 255)
-        Button1.Name = "Button1"
-        Button1.Size = New Size(104, 38)
-        Button1.TabIndex = 20
-        Button1.Text = "View Orders"
-        Button1.UseVisualStyleBackColor = False
+        Button4.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
+        Button4.FlatStyle = FlatStyle.Flat
+        Button4.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Button4.Location = New Point(292, 255)
+        Button4.Name = "Button4"
+        Button4.Size = New Size(104, 38)
+        Button4.TabIndex = 20
+        Button4.Text = "View Orders"
+        Button4.UseVisualStyleBackColor = False
         ' 
         ' PictureBox6
         ' 
@@ -293,24 +331,12 @@ Partial Class OnlineOrdersForm
         lblCompleted.BackColor = Color.FromArgb(CByte(0), CByte(200), CByte(83))
         lblCompleted.Font = New Font("Segoe UI", 7.8F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         lblCompleted.ForeColor = Color.White
-        lblCompleted.Location = New Point(936, 25)
+        lblCompleted.Location = New Point(1372, 25)
         lblCompleted.Name = "lblCompleted"
         lblCompleted.Padding = New Padding(10, 3, 10, 3)
         lblCompleted.Size = New Size(105, 23)
         lblCompleted.TabIndex = 14
         lblCompleted.Text = "COMPLETED"
-        ' 
-        ' Button3
-        ' 
-        Button3.BackColor = Color.FromArgb(CByte(224), CByte(224), CByte(224))
-        Button3.FlatStyle = FlatStyle.Flat
-        Button3.Font = New Font("Segoe UI Semibold", 7F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Button3.Location = New Point(178, 255)
-        Button3.Name = "Button3"
-        Button3.Size = New Size(104, 38)
-        Button3.TabIndex = 26
-        Button3.Text = "Reciept preview"
-        Button3.UseVisualStyleBackColor = False
         ' 
         ' OnlineOrdersForm
         ' 
@@ -324,7 +350,9 @@ Partial Class OnlineOrdersForm
         TableLayoutPanel1.PerformLayout()
         pnlHeader.ResumeLayout(False)
         pnlHeader.PerformLayout()
+        TableLayoutPanel2.ResumeLayout(False)
         Panel1.ResumeLayout(False)
+        Panel2.ResumeLayout(False)
         ResTemplate.ResumeLayout(False)
         ResTemplate.PerformLayout()
         CType(PictureBox8, ComponentModel.ISupportInitialize).EndInit()
@@ -338,12 +366,15 @@ Partial Class OnlineOrdersForm
     Friend WithEvents pnlHeader As Panel
     Friend WithEvents lblSubHeader As Label
     Friend WithEvents lblHeader As Label
+    Friend WithEvents TableLayoutPanel2 As TableLayoutPanel
     Friend WithEvents Panel1 As Panel
     Friend WithEvents btnRefresh As Button
+    Friend WithEvents Panel2 As Panel
     Private WithEvents ResTemplate As Panel
+    Friend WithEvents Button3 As Button
     Friend WithEvents PictureBox8 As PictureBox
     Friend WithEvents Button2 As Button
-    Friend WithEvents Button1 As Button
+    Friend WithEvents Button4 As Button
     Friend WithEvents PictureBox6 As PictureBox
     Friend WithEvents PictureBox5 As PictureBox
     Friend WithEvents PictureBox3 As PictureBox
@@ -354,5 +385,4 @@ Partial Class OnlineOrdersForm
     Private WithEvents lblDate2 As Label
     Private WithEvents lblTime2 As Label
     Private WithEvents lblCompleted As Label
-    Friend WithEvents Button3 As Button
 End Class

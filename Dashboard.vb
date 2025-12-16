@@ -2,41 +2,84 @@ Public Class Dashboard
 
     Private currentActiveButton As Button = Nothing
     Private currentForm As Form = Nothing
+    
+    ' Cached form instances
+    Private cachedDashboardForm As DashboardForm = Nothing
+    Private cachedPlaceOrderForm As PlaceOrderForm = Nothing
+    Private cachedOnlineOrdersForm As OnlineOrdersForm = Nothing
+    Private cachedReservationsForm As ReservationsForm = Nothing
+    Private cachedReportsForm As ReportsForm = Nothing
 
     Private Sub Dashboard_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         SetActiveButton(btnDashboard)
-        LoadForm(New DashboardForm())
+        LoadForm(GetOrCreateDashboardForm())
     End Sub
 
     Private Sub btnDashboard_Click(sender As Object, e As EventArgs) Handles btnDashboard.Click
         SetActiveButton(btnDashboard)
         lblHeaderTitle.Text = "Dashboard"
-        LoadForm(New DashboardForm())
+        LoadForm(GetOrCreateDashboardForm())
     End Sub
 
     Private Sub btnPlaceOrder_Click(sender As Object, e As EventArgs) Handles btnPlaceOrder.Click
         SetActiveButton(btnPlaceOrder)
         lblHeaderTitle.Text = "Place Order"
-        LoadForm(New PlaceOrderForm())
+        LoadForm(GetOrCreatePlaceOrderForm())
     End Sub
 
     Private Sub btnReservations_Click(sender As Object, e As EventArgs) Handles btnReservations.Click
         SetActiveButton(btnReservations)
         lblHeaderTitle.Text = "Reservations"
-        LoadForm(New ReservationsForm())
+        LoadForm(GetOrCreateReservationsForm())
     End Sub
 
     Private Sub btnReports_Click(sender As Object, e As EventArgs) Handles btnReports.Click
         SetActiveButton(btnReports)
         lblHeaderTitle.Text = "Reports"
-        LoadForm(New ReportsForm)
+        LoadForm(GetOrCreateReportsForm())
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         SetActiveButton(Button1)
         lblHeaderTitle.Text = "Online Orders"
-        LoadForm(New OnlineOrdersForm())
+        LoadForm(GetOrCreateOnlineOrdersForm())
     End Sub
+
+    ' Form caching methods
+    Private Function GetOrCreateDashboardForm() As DashboardForm
+        If cachedDashboardForm Is Nothing OrElse cachedDashboardForm.IsDisposed Then
+            cachedDashboardForm = New DashboardForm()
+        End If
+        Return cachedDashboardForm
+    End Function
+
+    Private Function GetOrCreatePlaceOrderForm() As PlaceOrderForm
+        If cachedPlaceOrderForm Is Nothing OrElse cachedPlaceOrderForm.IsDisposed Then
+            cachedPlaceOrderForm = New PlaceOrderForm()
+        End If
+        Return cachedPlaceOrderForm
+    End Function
+
+    Private Function GetOrCreateOnlineOrdersForm() As OnlineOrdersForm
+        If cachedOnlineOrdersForm Is Nothing OrElse cachedOnlineOrdersForm.IsDisposed Then
+            cachedOnlineOrdersForm = New OnlineOrdersForm()
+        End If
+        Return cachedOnlineOrdersForm
+    End Function
+
+    Private Function GetOrCreateReservationsForm() As ReservationsForm
+        If cachedReservationsForm Is Nothing OrElse cachedReservationsForm.IsDisposed Then
+            cachedReservationsForm = New ReservationsForm()
+        End If
+        Return cachedReservationsForm
+    End Function
+
+    Private Function GetOrCreateReportsForm() As ReportsForm
+        If cachedReportsForm Is Nothing OrElse cachedReportsForm.IsDisposed Then
+            cachedReportsForm = New ReportsForm()
+        End If
+        Return cachedReportsForm
+    End Function
 
     Private Sub SetActiveButton(activeButton As Button)
         If currentActiveButton IsNot Nothing Then
@@ -46,23 +89,28 @@ Public Class Dashboard
         currentActiveButton = activeButton
     End Sub
 
-    Private Sub LoadForm(newForm As Form)
-        ' Dispose previous form if exists
-        If currentForm IsNot Nothing Then
-            pnlContent.Controls.Remove(currentForm)
-            currentForm.Close()
-            currentForm.Dispose()
+    Private Sub LoadForm(formToShow As Form)
+        ' Hide current form instead of disposing it
+        If currentForm IsNot Nothing AndAlso currentForm IsNot formToShow Then
+            currentForm.Hide()
+            ' Don't remove from controls, just hide it to preserve state
+            ' pnlContent.Controls.Remove(currentForm) 
         End If
         
-        ' Configure the form to be a child form
-        currentForm = newForm
-        newForm.TopLevel = False
-        newForm.FormBorderStyle = FormBorderStyle.None
-        newForm.Dock = DockStyle.Fill
+        ' If this is a new form (not already in panel), configure and add it
+        If Not pnlContent.Controls.Contains(formToShow) Then
+            formToShow.TopLevel = False
+            formToShow.FormBorderStyle = FormBorderStyle.None
+            formToShow.Dock = DockStyle.Fill
+            pnlContent.Controls.Add(formToShow)
+        End If
         
-        ' Add to content panel and show
-        pnlContent.Controls.Add(newForm)
-        newForm.Show()
+        ' Ensure properties are correct every time we show it
+        formToShow.Dock = DockStyle.Fill
+        formToShow.Visible = True
+        currentForm = formToShow
+        formToShow.Show()
+        formToShow.BringToFront()
     End Sub
 
     Private Sub logo_Click(sender As Object, e As EventArgs) Handles logo.Click

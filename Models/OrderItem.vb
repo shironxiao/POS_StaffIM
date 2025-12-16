@@ -4,7 +4,7 @@ Public Class OrderItem
     Public Property ProductName As String
     Public Property Quantity As Integer
     Public Property UnitPrice As Decimal
-    Public Property ItemStatus As String
+    Public Property SpecialInstructions As String ' Replacing ItemStatus to match DB
     Public Property Category As String ' Helper property for UI
     Public Property ProductID As Integer
     Public Property PrepTime As Integer ' Helper property for calculation

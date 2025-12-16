@@ -7,12 +7,12 @@ Public Class DashboardForm
     
     ' Active Orders Pagination
     Private activeOrdersPage As Integer = 1
-    Private activeOrdersPageSize As Integer = 100 ' Updated to 100
+    Private activeOrdersPageSize As Integer = 50
     Private activeOrdersTotalPages As Integer = 1
     
     ' Reservations Pagination
     Private reservationsPage As Integer = 1
-    Private reservationsPageSize As Integer = 100 ' Updated to 100
+    Private reservationsPageSize As Integer = 50
     Private reservationsTotalPages As Integer = 1
     
     ' Controls (Active Orders)
@@ -46,6 +46,15 @@ Public Class DashboardForm
         Dim taskReservations = LoadTodayReservationsAsync()
         
         Await Task.WhenAll(taskOrders, taskReservations)
+    End Sub
+
+    Private Async Sub DashboardForm_VisibleChanged(sender As Object, e As EventArgs) Handles MyBase.VisibleChanged
+        If Me.Visible AndAlso Not Me.Disposing Then
+            LoadDashboardStatistics()
+            Dim taskOrders = LoadActiveOrdersAsync()
+            Dim taskReservations = LoadTodayReservationsAsync()
+            Await Task.WhenAll(taskOrders, taskReservations)
+        End If
     End Sub
 
     Private Sub InitializePaginationControls()
@@ -148,58 +157,79 @@ Public Class DashboardForm
     ''' <summary>
     ''' Loads and displays dashboard statistics (orders, reservations, feedback counts)
     ''' </summary>
-    Private Sub LoadDashboardStatistics()
+    ''' <summary>
+    ''' Loads and displays dashboard statistics (orders, reservations, feedback counts)
+    ''' </summary>
+    Private Async Function LoadDashboardStatisticsAsync() As Task
         Try
-            ' Load today's orders count
-            Dim todayOrdersCount As Integer = orderRepository.GetTodayOrdersCount()
+            Dim todayOrdersCount As Integer
+            Dim todayReservationsCount As Integer
+            
+            ' Run DB calls in background
+            Await Task.Run(Sub()
+                               todayOrdersCount = orderRepository.GetTodayOrdersCount()
+                               todayReservationsCount = reservationRepository.GetTodayReservationsCount()
+                           End Sub)
+            
+            ' Update UI
             lblCardOrdersValue.Text = todayOrdersCount.ToString()
-
-            ' Load today's reservations count
-            Dim todayReservationsCount As Integer = reservationRepository.GetTodayReservationsCount()
             lblCardReservationsValue.Text = todayReservationsCount.ToString()
-
+            
             ' Load current time
             Dim currentTime As String = DateTime.Now.ToString("h:mm tt")
             lblCardTimeValue.Text = currentTime
-
-            ' Load feedback count (placeholder logic as per original)
-            ' Assuming we might add FeedbackRepository later
-            ' Dim feedbackQuery As String = "SELECT COUNT(*) FROM customers WHERE FeedbackCount > 0 AND DATE(LastTransactionDate) = CURDATE()"
-            ' Dim feedbackCount As Object = modDB.ExecuteScalar(feedbackQuery)
-            ' If feedbackCount IsNot Nothing Then
-            '     lblCardFeedbackValue.Text = feedbackCount.ToString()
-            ' Else
-            '     lblCardFeedbackValue.Text = "0"
-            ' End If
+            
         Catch ex As Exception
-            MessageBox.Show($"Error loading dashboard statistics: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Console.WriteLine($"Error loading dashboard statistics: {ex.Message}")
         End Try
+    End Function
+
+    Private Async Sub LoadDashboardStatistics()
+        ' Legacy wrapper or Event Handler variant
+        Await LoadDashboardStatisticsAsync()
     End Sub
 
     ''' <summary>
-    ''' Loads active orders (orders with status 'Preparing' or 'Served')
-    ''' and displays them in the active orders panel
+    ''' Loads active orders (Buffered - All)
+    ''' </summary>
+    ' Buffer for client-side pagination
+    Private allActiveOrders As New List(Of Order)()
+    
+    ''' <summary>
+    ''' Loads active orders (Buffered - All)
     ''' </summary>
     Private Async Function LoadActiveOrdersAsync() As Task
         Try
-            Dim totalCount As Integer = Await orderRepository.GetTotalActiveOrdersCountAsync()
-            activeOrdersTotalPages = Math.Max(1, CInt(Math.Ceiling(totalCount / activeOrdersPageSize)))
+            ' Load ALL active orders into buffer (Background)
+            Await Task.Run(Sub()
+                               allActiveOrders = orderRepository.GetActiveOrdersPagedAsync(0, 0).Result
+                           End Sub)
             
-            ' Validate page
+            ' Calculate pagination
+            Dim count As Integer = allActiveOrders.Count
+            activeOrdersTotalPages = Math.Max(1, CInt(Math.Ceiling(count / activeOrdersPageSize)))
+            
             If activeOrdersPage > activeOrdersTotalPages Then activeOrdersPage = activeOrdersTotalPages
             If activeOrdersPage < 1 Then activeOrdersPage = 1
             
-            Dim offset As Integer = (activeOrdersPage - 1) * activeOrdersPageSize
-            Dim activeOrders As List(Of Order) = Await orderRepository.GetActiveOrdersPagedAsync(activeOrdersPageSize, offset)
+            DisplayActiveOrdersPage()
             
-            DisplayActiveOrders(activeOrders)
-            UpdateActiveOrdersControls()
+            ' Show pagination controls if needed
+            If txtPageOrders IsNot Nothing AndAlso txtPageOrders.Parent IsNot Nothing Then
+                 Dim pnlPager As Control = txtPageOrders.Parent
+                 pnlPager.Visible = True
+            End If
             
         Catch ex As Exception
-            ' Log error but don't crash dashboard
             Console.WriteLine($"Error loading active orders: {ex.Message}")
         End Try
     End Function
+
+    Private Sub DisplayActiveOrdersPage()
+        Dim pageData = allActiveOrders.Skip((activeOrdersPage - 1) * activeOrdersPageSize).Take(activeOrdersPageSize).ToList()
+        DisplayActiveOrders(pageData)
+        UpdateActiveOrdersControls()
+    End Sub
 
 
     
@@ -220,7 +250,7 @@ Public Class DashboardForm
         End If
     End Sub
 
-    Private Async Sub ValidateAndJumpOrders()
+    Private Sub ValidateAndJumpOrders()
         Dim newPage As Integer
         If Integer.TryParse(txtPageOrders.Text, newPage) Then
             If newPage < 1 Then newPage = 1
@@ -228,7 +258,7 @@ Public Class DashboardForm
             
             If newPage <> activeOrdersPage Then
                 activeOrdersPage = newPage
-                Await LoadActiveOrdersAsync()
+                DisplayActiveOrdersPage()
             Else
                 txtPageOrders.Text = activeOrdersPage.ToString()
             End If
@@ -237,17 +267,17 @@ Public Class DashboardForm
         End If
     End Sub
     
-    Private Async Sub btnPrevOrders_Click(sender As Object, e As EventArgs)
+    Private Sub btnPrevOrders_Click(sender As Object, e As EventArgs)
         If activeOrdersPage > 1 Then
             activeOrdersPage -= 1
-            Await LoadActiveOrdersAsync()
+            DisplayActiveOrdersPage()
         End If
     End Sub
 
-    Private Async Sub btnNextOrders_Click(sender As Object, e As EventArgs)
+    Private Sub btnNextOrders_Click(sender As Object, e As EventArgs)
         If activeOrdersPage < activeOrdersTotalPages Then
             activeOrdersPage += 1
-            Await LoadActiveOrdersAsync()
+            DisplayActiveOrdersPage()
         End If
     End Sub
 
@@ -386,25 +416,41 @@ Public Class DashboardForm
     ''' <summary>
     ''' Loads today's reservations and displays them in the reservations panel
     ''' </summary>
+    ' Buffer for client-side pagination (Reservations)
+    Private allTodayReservations As New List(Of Reservation)()
+
     Private Async Function LoadTodayReservationsAsync() As Task
         Try
-            Dim totalCount As Integer = Await reservationRepository.GetTotalTodayReservationsCountAsync()
-            reservationsTotalPages = Math.Max(1, CInt(Math.Ceiling(totalCount / reservationsPageSize)))
+            ' Load ALL today's reservations into buffer (Background)
+            Await Task.Run(Sub()
+                               allTodayReservations = reservationRepository.GetTodayReservationsPagedAsync(0, 0).Result
+                           End Sub)
             
-            ' Validate page
+            ' Calculate pagination
+            Dim count As Integer = allTodayReservations.Count
+            reservationsTotalPages = Math.Max(1, CInt(Math.Ceiling(count / reservationsPageSize)))
+            
             If reservationsPage > reservationsTotalPages Then reservationsPage = reservationsTotalPages
             If reservationsPage < 1 Then reservationsPage = 1
             
-            Dim offset As Integer = (reservationsPage - 1) * reservationsPageSize
-            Dim reservations As List(Of Reservation) = Await reservationRepository.GetTodayReservationsPagedAsync(reservationsPageSize, offset)
+            DisplayTodayReservationsPage()
             
-            DisplayTodayReservations(reservations)
-            UpdateReservationsControls()
+            ' Show pagination controls
+            If txtPageRes IsNot Nothing AndAlso txtPageRes.Parent IsNot Nothing Then
+                 Dim pnlPager As Control = txtPageRes.Parent
+                 pnlPager.Visible = True
+            End If
             
         Catch ex As Exception
             Console.WriteLine($"Error loading reservations: {ex.Message}")
         End Try
     End Function
+
+    Private Sub DisplayTodayReservationsPage()
+        Dim pageData = allTodayReservations.Skip((reservationsPage - 1) * reservationsPageSize).Take(reservationsPageSize).ToList()
+        DisplayTodayReservations(pageData)
+        UpdateReservationsControls()
+    End Sub
 
 
 
@@ -425,7 +471,7 @@ Public Class DashboardForm
         End If
     End Sub
 
-    Private Async Sub ValidateAndJumpReservations()
+    Private Sub ValidateAndJumpReservations()
         Dim newPage As Integer
         If Integer.TryParse(txtPageRes.Text, newPage) Then
             If newPage < 1 Then newPage = 1
@@ -433,7 +479,7 @@ Public Class DashboardForm
             
             If newPage <> reservationsPage Then
                 reservationsPage = newPage
-                Await LoadTodayReservationsAsync()
+                DisplayTodayReservationsPage()
             Else
                 txtPageRes.Text = reservationsPage.ToString()
             End If
@@ -442,17 +488,17 @@ Public Class DashboardForm
         End If
     End Sub
     
-    Private Async Sub btnPrevRes_Click(sender As Object, e As EventArgs)
+    Private Sub btnPrevRes_Click(sender As Object, e As EventArgs)
         If reservationsPage > 1 Then
             reservationsPage -= 1
-            Await LoadTodayReservationsAsync()
+            DisplayTodayReservationsPage()
         End If
     End Sub
 
-    Private Async Sub btnNextRes_Click(sender As Object, e As EventArgs)
+    Private Sub btnNextRes_Click(sender As Object, e As EventArgs)
         If reservationsPage < reservationsTotalPages Then
             reservationsPage += 1
-            Await LoadTodayReservationsAsync()
+            DisplayTodayReservationsPage()
         End If
     End Sub
 
@@ -600,7 +646,7 @@ Public Class DashboardForm
                 If lblStatus Is Nothing OrElse lblCountdown Is Nothing OrElse btnCancel Is Nothing Then Continue For
 
                 Dim startTime As DateTime = order.OrderDate.Date + order.OrderTime
-                Dim prepMinutes As Integer = 15 ' Default 15 minutes prep time
+                Dim prepMinutes As Integer = If(order.PreparationTimeEstimate.HasValue AndAlso order.PreparationTimeEstimate.Value > 0, order.PreparationTimeEstimate.Value, 15) ' Use estimate or default to 15
                 Dim elapsed As TimeSpan = DateTime.Now - startTime
 
                 ' Logic
@@ -690,10 +736,21 @@ Public Class DashboardForm
                     lblCountdown.ForeColor = Color.Orange
                     lblStatus.ForeColor = Color.Orange
                 Else
-                    ' Event time reached or passed - ready to serve
-                    lblCountdown.Text = "00:00"
-                    lblCountdown.ForeColor = Color.Green
-                    lblStatus.ForeColor = Color.FromArgb(40, 167, 69)
+                    ' Event time reached or passed - mark as completed
+                    lblCountdown.Text = "Completed"
+                    lblCountdown.ForeColor = Color.Gray
+                    
+                    ' Auto-update status to Completed if not already
+                    If lblStatus.Text <> "Completed" Then
+                        lblStatus.Text = "Completed"
+                        lblStatus.ForeColor = Color.Gray
+                        
+                        ' Update database status
+                        If reservation.ReservationStatus <> "Completed" Then
+                            reservation.ReservationStatus = "Completed"
+                            reservationRepository.UpdateReservationStatus(reservation.ReservationID, "Completed")
+                        End If
+                    End If
                 End If
             End If
         Next

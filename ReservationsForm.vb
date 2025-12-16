@@ -100,29 +100,31 @@ Public Class ReservationsForm
         Panel1.Height -= pnlPagination.Height
     End Sub
 
+    ' Buffer for client-side pagination
+    Private allReservations As New List(Of Reservation)()
+    
     Private Async Function LoadReservationsAsync() As Task
         If isLoading Then Return
         isLoading = True
         
         Try
-            Dim reservations As List(Of Reservation) = Nothing
-
-            ' Run DB operations on background thread
+            ' Load all into buffer (Background)
             Await Task.Run(Sub()
-                               ' Calculate offset
-                               Dim offset As Integer = (currentPage - 1) * pageSize
-            
-                               ' Fetch total count first
-                               totalRecords = reservationRepository.GetTotalReservationsCount()
-                               totalPages = Math.Max(1, CInt(Math.Ceiling(totalRecords / pageSize)))
-            
-                               ' Fetch paged data
-                               reservations = reservationRepository.GetAllReservationsPaged(pageSize, offset)
+                               allReservations = reservationRepository.GetAllReservationsPaged(0, 0)
                            End Sub)
             
-            ' Update UI
-            DisplayReservations(reservations)
-            UpdatePaginationControls()
+            ' Calculate pagination
+            totalRecords = allReservations.Count
+            totalPages = Math.Max(1, CInt(Math.Ceiling(totalRecords / pageSize)))
+            
+            If currentPage > totalPages Then currentPage = totalPages
+            If currentPage < 1 Then currentPage = 1
+            
+            ' Display first page
+            DisplayCurrentPage()
+            
+            ' Show pagination controls
+            If pnlPagination IsNot Nothing Then pnlPagination.Visible = True
             
         Catch ex As Exception
             MessageBox.Show($"Error loading reservations: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -130,6 +132,13 @@ Public Class ReservationsForm
             isLoading = False
         End Try
     End Function
+
+    Private Sub DisplayCurrentPage()
+        ' Slice the buffer
+        Dim pageData = allReservations.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList()
+        DisplayReservations(pageData)
+        UpdatePaginationControls()
+    End Sub
 
     Private Sub UpdatePaginationControls()
         If txtPageNumber IsNot Nothing Then
@@ -149,7 +158,7 @@ Public Class ReservationsForm
         End If
     End Sub
 
-    Private Async Sub ValidateAndJumpToPage()
+    Private Sub ValidateAndJumpToPage()
         Dim newPage As Integer
         If Integer.TryParse(txtPageNumber.Text, newPage) Then
             If newPage < 1 Then newPage = 1
@@ -157,7 +166,7 @@ Public Class ReservationsForm
             
             If newPage <> currentPage Then
                 currentPage = newPage
-                Await LoadReservationsAsync()
+                DisplayCurrentPage()
             Else
                 txtPageNumber.Text = currentPage.ToString()
             End If
@@ -166,17 +175,17 @@ Public Class ReservationsForm
         End If
     End Sub
     
-    Private Async Sub btnPrevPage_Click(sender As Object, e As EventArgs)
+    Private Sub btnPrevPage_Click(sender As Object, e As EventArgs)
         If currentPage > 1 Then
             currentPage -= 1
-            Await LoadReservationsAsync()
+            DisplayCurrentPage()
         End If
     End Sub
 
-    Private Async Sub btnNextPage_Click(sender As Object, e As EventArgs)
+    Private Sub btnNextPage_Click(sender As Object, e As EventArgs)
         If currentPage < totalPages Then
             currentPage += 1
-            Await LoadReservationsAsync()
+            DisplayCurrentPage()
         End If
     End Sub
 
@@ -186,30 +195,33 @@ Public Class ReservationsForm
     End Sub
 
     Private Sub DisplayReservations(reservations As List(Of Reservation))
-        ' Keep the header controls (Button, PictureBox) and remove reservation panels
+        ' Panel2 is the scrollable content area for cards
+        ' Panel1 is the fixed header with buttons (managed by Designer)
+        
+        ' Keep only the template
         Dim controlsKeep As New List(Of Control)
-        For Each ctrl As Control In Panel1.Controls
-            If ctrl Is btnNewReservation OrElse ctrl Is PictureBox1 OrElse ctrl Is ResTemplate OrElse ctrl Is btnRefresh Then
+        For Each ctrl As Control In Panel2.Controls
+            If ctrl Is ResTemplate Then
                 controlsKeep.Add(ctrl)
             End If
         Next
 
-        Panel1.Controls.Clear()
+        Panel2.Controls.Clear()
 
-        ' Re-add kept controls
+        ' Re-add template
         For Each ctrl In controlsKeep
-            Panel1.Controls.Add(ctrl)
+            Panel2.Controls.Add(ctrl)
         Next
 
         Dim xPos As Integer = 38
-        Dim yPos As Integer = 119
+        Dim yPos As Integer = 20  ' Start closer to top since Panel2 is just for cards
         Dim colCount As Integer = 0
         Dim maxCols As Integer = 3 ' Adjust based on screen width
 
         For Each res As Reservation In reservations
             Dim panel As Panel = CreateReservationPanel(res)
             panel.Location = New Point(xPos, yPos)
-            Panel1.Controls.Add(panel)
+            Panel2.Controls.Add(panel)
 
             colCount += 1
             If colCount >= maxCols Then
@@ -258,7 +270,7 @@ Public Class ReservationsForm
         lblEvent.Text = res.EventType
 
         ' Clone status button
-        Dim btnStatus As Button = CloneButton(Button2)
+        Dim btnStatus As Button = CloneButton(Button3)
         btnStatus.Text = res.ReservationStatus
 
         ' Set status color - Confirmed and Accepted both show green
@@ -286,7 +298,7 @@ Public Class ReservationsForm
         })
 
         ' Add View Order button for all reservations
-        Dim btnViewOrder As Button = CloneButton(Button1)
+        Dim btnViewOrder As Button = CloneButton(Button4)
         btnViewOrder.Text = "View Order"
         btnViewOrder.BackColor = Color.FromArgb(52, 152, 219) ' Blue color
         AddHandler btnViewOrder.Click, Sub(sender, e)
@@ -296,7 +308,7 @@ Public Class ReservationsForm
 
         ' Add Receipt Preview button (New Feature)
         ' We create this programmatically since it might not be in the template yet
-        Dim btnPreview As Button = CloneButton(Button1) ' Clone View Order button style
+        Dim btnPreview As Button = CloneButton(Button4) ' Clone View Order button style
         btnPreview.Text = "Receipt Preview"
         btnPreview.BackColor = Color.FromArgb(224, 224, 224)
         btnPreview.ForeColor = Color.Black
@@ -455,18 +467,18 @@ Public Class ReservationsForm
     End Function
 
     Private Async Sub btnNewReservation_Click(sender As Object, e As EventArgs) Handles btnNewReservation.Click
-        Dim newResForm As New NewReservationForm()
-        If newResForm.ShowDialog() = DialogResult.OK Then
-            Await LoadReservationsAsync()
+        Dim newResForm As New NewReservationForm
+        If newResForm.ShowDialog = DialogResult.OK Then
+            Await LoadReservationsAsync
         End If
     End Sub
 
     Private Async Sub btnRefresh_Click(sender As Object, e As EventArgs) Handles btnRefresh.Click
         currentPage = 1 ' Reset to first page on refresh
-        Await LoadReservationsAsync()
+        Await LoadReservationsAsync
     End Sub
 
-    Private Sub lblTime2_Click(sender As Object, e As EventArgs) Handles lblTime2.Click
+    Private Sub lblTime2_Click(sender As Object, e As EventArgs)
 
     End Sub
 End Class

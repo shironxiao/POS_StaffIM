@@ -1,9 +1,11 @@
 ﻿Imports System.Collections.Generic
 Imports System.Text
+Imports MySql.Data.MySqlClient
 
 Public Class OnlineOrdersForm
     Private orderRepository As New OrderRepository()
     Private cmbFilterStatus As ComboBox
+    Private isLoading As Boolean = False
 
     ' Pagination variables
     Private currentPage As Integer = 1
@@ -21,7 +23,7 @@ Public Class OnlineOrdersForm
     ''' <summary>
     ''' Loads online orders when form loads
     ''' </summary>
-    Private Sub OnlineOrdersForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Private Async Sub OnlineOrdersForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Hide the template
         ResTemplate.Visible = False
 
@@ -31,7 +33,8 @@ Public Class OnlineOrdersForm
         ' Create and add filter ComboBox
         CreateFilterComboBox()
 
-        LoadOnlineOrders()
+        ' Load asynchronously
+        Await LoadOnlineOrdersAsync()
     End Sub
 
     Private Sub InitializePaginationControls()
@@ -120,32 +123,56 @@ Public Class OnlineOrdersForm
     End Sub
 
     ''' <summary>
-    ''' Loads all online orders from the database and displays them
+    ''' Loads all online orders from the database and displays them asynchronously
     ''' </summary>
-    Private Sub LoadOnlineOrders()
+    ' Buffer for client-side pagination
+    Private allOrders As New List(Of OnlineOrder)()
+
+    Private Async Function LoadOnlineOrdersAsync() As Task
+        If isLoading Then Return
+        isLoading = True
+        
         Try
             Dim selectedStatus As String = "All Orders"
             If cmbFilterStatus.SelectedItem IsNot Nothing Then
                 selectedStatus = cmbFilterStatus.SelectedItem.ToString()
             End If
-
-            ' Calculate offset
-            Dim offset As Integer = (currentPage - 1) * pageSize
-
-            ' Fetch total count first
-            totalRecords = orderRepository.GetTotalOnlineOrdersCount(selectedStatus)
+            
+            ' Load all into buffer (Background)
+            Await Task.Run(Sub()
+                               allOrders = orderRepository.GetOnlineOrdersPaged(0, 0, selectedStatus)
+                           End Sub)
+            
+            ' Calculate pagination
+            totalRecords = allOrders.Count
             totalPages = Math.Max(1, CInt(Math.Ceiling(totalRecords / pageSize)))
-
-            ' Fetch paged data
-            Dim onlineOrders As List(Of OnlineOrder) = orderRepository.GetOnlineOrdersPaged(pageSize, offset, selectedStatus)
-
-            ' Update UI
-            DisplayOnlineOrders(onlineOrders)
-            UpdatePaginationControls()
-
+            
+            If currentPage > totalPages Then currentPage = totalPages
+            If currentPage < 1 Then currentPage = 1
+            
+            ' Display first page
+            DisplayCurrentPage()
+            
+            ' Show pagination controls
+            If pnlPagination IsNot Nothing Then pnlPagination.Visible = True
+            
         Catch ex As Exception
             MessageBox.Show($"Error loading online orders: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            isLoading = False
         End Try
+    End Function
+
+    Private Sub DisplayCurrentPage()
+        ' Slice the buffer
+        Dim pageData = allOrders.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList()
+        DisplayOnlineOrders(pageData)
+        UpdatePaginationControls()
+    End Sub
+    
+    Private Async Sub LoadOnlineOrders()
+        ' Legacy method kept for compatibility
+        Await LoadOnlineOrdersAsync()
     End Sub
 
     Private Sub UpdatePaginationControls()
@@ -174,7 +201,7 @@ Public Class OnlineOrdersForm
             
             If newPage <> currentPage Then
                 currentPage = newPage
-                LoadOnlineOrders()
+                DisplayCurrentPage()
             Else
                 txtPageNumber.Text = currentPage.ToString()
             End If
@@ -186,14 +213,14 @@ Public Class OnlineOrdersForm
     Private Sub btnPrevPage_Click(sender As Object, e As EventArgs)
         If currentPage > 1 Then
             currentPage -= 1
-            LoadOnlineOrders()
+            DisplayCurrentPage()
         End If
     End Sub
 
     Private Sub btnNextPage_Click(sender As Object, e As EventArgs)
         If currentPage < totalPages Then
             currentPage += 1
-            LoadOnlineOrders()
+            DisplayCurrentPage()
         End If
     End Sub
 
@@ -204,19 +231,22 @@ Public Class OnlineOrdersForm
     ''' Displays online orders using card templates
     ''' </summary>
     Private Sub DisplayOnlineOrders(orders As List(Of OnlineOrder))
-        ' Keep the template and other non-panel controls
+        ' Panel2 is the scrollable content area for cards
+        ' Panel1 is the fixed header with buttons (managed by Designer)
+        
+        ' Keep only the template
         Dim controlsKeep As New List(Of Control)
-        For Each ctrl As Control In Panel1.Controls
-            If ctrl Is ResTemplate OrElse ctrl Is btnRefresh OrElse ctrl Is cmbFilterStatus Then
+        For Each ctrl As Control In Panel2.Controls
+            If ctrl Is ResTemplate Then
                 controlsKeep.Add(ctrl)
             End If
         Next
 
-        Panel1.Controls.Clear()
+        Panel2.Controls.Clear()
 
-        ' Re-add kept controls
+        ' Re-add template
         For Each ctrl In controlsKeep
-            Panel1.Controls.Add(ctrl)
+            Panel2.Controls.Add(ctrl)
         Next
 
         If orders.Count = 0 Then
@@ -227,20 +257,20 @@ Public Class OnlineOrdersForm
                 .Location = New Point(600, 300),
                 .AutoSize = True
             }
-            Panel1.Controls.Add(lblEmpty)
+            Panel2.Controls.Add(lblEmpty)
             Return
         End If
 
         ' Create cards for each order
         Dim xPos As Integer = 38
-        Dim yPos As Integer = 119
+        Dim yPos As Integer = 20  ' Start closer to top since Panel2 is just for cards
         Dim cardsPerRow As Integer = 3
         Dim cardCount As Integer = 0
 
         For Each order In orders
             Dim orderCard As Panel = CreateOrderCard(order)
             orderCard.Location = New Point(xPos, yPos)
-            Panel1.Controls.Add(orderCard)
+            Panel2.Controls.Add(orderCard)
 
             cardCount += 1
             If cardCount Mod cardsPerRow = 0 Then
@@ -284,7 +314,16 @@ Public Class OnlineOrdersForm
         Dim lblTime As Label = CloneLabel(lblTime2)
         lblTime.Text = DateTime.Today.Add(order.OrderTime).ToString("h:mm tt")
 
-        ' Status Button (Button2 in template)
+        ' Website Status Label (shows Pending/Confirmed/Cancelled)
+        Dim lblWebStatus As Label = New Label With {
+            .Text = If(String.IsNullOrEmpty(order.WebsiteStatus), "Pending", order.WebsiteStatus),
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+            .ForeColor = GetWebsiteStatusColor(order.WebsiteStatus),
+            .Location = New Point(20, 250),
+            .AutoSize = True
+        }
+        
+        ' Status Button (Button2 in template) - shows OrderStatus
         Dim btnStatus As Button = CloneButton(Button2)
         btnStatus.Text = order.OrderStatus
         btnStatus.BackColor = GetStatusColor(order.OrderStatus)
@@ -296,20 +335,31 @@ Public Class OnlineOrdersForm
         Dim iconDate As PictureBox = ClonePictureBox(PictureBox5)
         Dim iconTime As PictureBox = ClonePictureBox(PictureBox6)
 
-        ' View Details Button (Button1 in template)
-        Dim btnView As Button = CloneButton(Button1)
+        ' View Details Button (Button4 in template)
+        Dim btnView As Button = CloneButton(Button4)
         btnView.Text = "View Details"
         AddHandler btnView.Click, Sub(s, ev) ShowOrderDetails(order)
 
-        ' Receipt Preview Button (Button3 in template)
-        Dim btnPreview As Button = CloneButton(Button3)
-        btnPreview.Text = "Receipt Preview"
-        AddHandler btnPreview.Click, Sub(s, ev) ShowReceiptPreview(order)
+        ' Confirm Order Button (only show if WebsiteStatus is Pending)
+        Dim btnConfirm As Button = Nothing
+        If order.WebsiteStatus = "Pending" Then
+            btnConfirm = CloneButton(Button3)
+            btnConfirm.Text = "Confirm Order"
+            btnConfirm.BackColor = Color.FromArgb(40, 167, 69) ' Green
+            btnConfirm.ForeColor = Color.White
+            AddHandler btnConfirm.Click, Sub(s, ev) ConfirmOrder(order)
+        Else
+            ' Receipt Preview Button (only show if not Pending)
+            Dim btnPreview As Button = CloneButton(Button3)
+            btnPreview.Text = "Receipt Preview"
+            AddHandler btnPreview.Click, Sub(s, ev) ShowReceiptPreview(order)
+            btnConfirm = btnPreview
+        End If
 
         ' Add controls to panel
         panel.Controls.AddRange({
             lblName, lblCode, iconEmail, lblEmailClone, iconPhone, lblPhone,
-            iconDate, lblDate, iconTime, lblTime, btnStatus, btnView, btnPreview
+            iconDate, lblDate, iconTime, lblTime, lblWebStatus, btnStatus, btnView, btnConfirm
         })
 
         Return panel
@@ -453,6 +503,55 @@ Public Class OnlineOrdersForm
     End Function
 
     ''' <summary>
+    ''' Returns color based on website status
+    ''' </summary>
+    Private Function GetWebsiteStatusColor(status As String) As Color
+        Select Case status.ToLower()
+            Case "confirmed"
+                Return Color.FromArgb(40, 167, 69) ' Green
+            Case "cancelled"
+                Return Color.FromArgb(220, 53, 69) ' Red
+            Case "pending", ""
+                Return Color.FromArgb(255, 127, 39) ' Orange
+            Case Else
+                Return Color.Gray
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' Confirms an online order and starts processing
+    ''' </summary>
+    Private Sub ConfirmOrder(order As OnlineOrder)
+        Try
+            ' Update WebsiteStatus to Confirmed
+            Dim query As String = "UPDATE orders SET WebsiteStatus = 'Confirmed', OrderStatus = 'Preparing', UpdatedDate = NOW() WHERE OrderID = @orderID"
+            Dim parameters As MySqlParameter() = {
+                New MySqlParameter("@orderID", order.OrderID)
+            }
+            
+            modDB.ExecuteNonQuery(query, parameters)
+            
+            ' Deduct inventory for the order
+            Try
+                Dim items As List(Of OrderItem) = orderRepository.GetOrderItems(order.OrderID)
+                Dim inventoryService As New InventoryService()
+                inventoryService.DeductInventoryForOrder(order.OrderID, items)
+            Catch invEx As Exception
+                System.Diagnostics.Debug.WriteLine($"Inventory deduction failed for Order #{order.OrderID}: {invEx.Message}")
+            End Try
+            
+            MessageBox.Show($"Order #{order.OrderID} has been confirmed and is now being prepared!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            
+            ' Refresh the list
+            currentPage = 1
+            LoadOnlineOrders()
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error confirming order: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' Shows order details and actions
     ''' </summary>
     Private Sub ShowOrderDetails(order As OnlineOrder)
@@ -506,9 +605,5 @@ Public Class OnlineOrdersForm
 
     Private Sub FilterOrdersByStatus(status As String)
         ' Legacy method removed - replaced by DB filtering in LoadOnlineOrders
-    End Sub
-
-    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-
     End Sub
 End Class

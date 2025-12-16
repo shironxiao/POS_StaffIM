@@ -12,6 +12,7 @@ Public Class Order
     Public Property TotalAmount As Decimal
     Public Property OrderStatus As String
     Public Property Remarks As String ' NEW: General notes
+    Public Property PreparationTimeEstimate As Integer? ' Nullable in DB
     
     ' Related data
     Public Property Items As List(Of OrderItem) ' Order line items

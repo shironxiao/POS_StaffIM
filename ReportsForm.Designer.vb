@@ -47,9 +47,9 @@ Partial Class ReportsForm
         Panel2 = New Panel()
         tlpTableStructure = New TableLayoutPanel()
         pnlTableHeader = New Panel()
-        pnlTableTotal = New Panel()
         pnlOrdersContainer = New Panel()
         tlpOrdersRows = New TableLayoutPanel()
+        pnlTableTotal = New Panel()
         tlpRoot.SuspendLayout()
         pnlHeader.SuspendLayout()
         tlpStatsCards.SuspendLayout()
@@ -368,25 +368,14 @@ Partial Class ReportsForm
         pnlTableHeader.Size = New Size(1004, 40)
         pnlTableHeader.TabIndex = 0
         ' 
-        ' pnlTableTotal
-        ' 
-        pnlTableTotal.BackColor = Color.White
-        pnlTableTotal.Dock = DockStyle.Fill
-        pnlTableTotal.Location = New Point(0, 269)
-        pnlTableTotal.Margin = New Padding(0)
-        pnlTableTotal.Name = "pnlTableTotal"
-        pnlTableTotal.Padding = New Padding(20)
-        pnlTableTotal.Size = New Size(1004, 50)
-        pnlTableTotal.TabIndex = 2
-        ' 
         ' pnlOrdersContainer
         ' 
         pnlOrdersContainer.AutoScroll = True
         pnlOrdersContainer.Controls.Add(tlpOrdersRows)
         pnlOrdersContainer.Dock = DockStyle.Fill
-        pnlOrdersContainer.Location = New Point(0, 0)
+        pnlOrdersContainer.Location = New Point(3, 43)
         pnlOrdersContainer.Name = "pnlOrdersContainer"
-        pnlOrdersContainer.Size = New Size(1004, 319)
+        pnlOrdersContainer.Size = New Size(998, 223)
         pnlOrdersContainer.TabIndex = 3
         ' 
         ' tlpOrdersRows
@@ -399,8 +388,19 @@ Partial Class ReportsForm
         tlpOrdersRows.Dock = DockStyle.Top
         tlpOrdersRows.Location = New Point(0, 0)
         tlpOrdersRows.Name = "tlpOrdersRows"
-        tlpOrdersRows.Size = New Size(1004, 1)
+        tlpOrdersRows.Size = New Size(998, 1)
         tlpOrdersRows.TabIndex = 0
+        ' 
+        ' pnlTableTotal
+        ' 
+        pnlTableTotal.BackColor = Color.White
+        pnlTableTotal.Dock = DockStyle.Fill
+        pnlTableTotal.Location = New Point(0, 269)
+        pnlTableTotal.Margin = New Padding(0)
+        pnlTableTotal.Name = "pnlTableTotal"
+        pnlTableTotal.Padding = New Padding(20)
+        pnlTableTotal.Size = New Size(1004, 50)
+        pnlTableTotal.TabIndex = 2
         ' 
         ' ReportsForm
         ' 

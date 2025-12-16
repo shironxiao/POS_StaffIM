@@ -52,6 +52,12 @@ Public Class ReservationSelectOrder
             ' Load products in background thread
             Dim products As List(Of Product) = Await productRepository.GetProductsByCategoryAsync(category)
 
+            ' Check inventory status asynchronously
+            Await Task.Run(Sub()
+                               Dim invService As New InventoryService()
+                               invService.CheckInventoryForProducts(products)
+                           End Sub)
+
             ' Update UI on UI thread
             DisplayProducts(products)
 

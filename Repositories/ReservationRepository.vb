@@ -3,66 +3,48 @@ Imports System.Collections.Generic
 Imports System.Threading.Tasks
 
 Public Class ReservationRepository
-    Public Function GetTodayReservations() As List(Of Reservation)
-        Return GetTodayReservationsPaged(10, 0)
-    End Function
-
-    Public Function GetTodayReservationsPaged(limit As Integer, offset As Integer) As List(Of Reservation)
-        ' Show reservations for today (EventDate) with Accepted or Confirmed status
-        Dim query As String = "SELECT r.ReservationID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, r.EventTime, r.NumberOfGuests, r.ReservationStatus, " &
-                              "COALESCE((SELECT SUM(ri.Quantity * ri.UnitPrice) FROM reservation_items ri WHERE ri.ReservationID = r.ReservationID), 0) AS TotalPrice, " &
-                              "COALESCE((SELECT SUM(ri.Quantity * p.PrepTime) FROM reservation_items ri JOIN products p ON ri.ProductName = p.ProductName WHERE ri.ReservationID = r.ReservationID), 0) AS PrepTime " &
-                              "FROM reservations r " &
-                              "LEFT JOIN customers c ON r.CustomerID = c.CustomerID " &
-                              "WHERE DATE(r.EventDate) = CURDATE() AND r.ReservationStatus IN ('Accepted', 'Confirmed') " &
-                              "ORDER BY r.EventTime ASC LIMIT " & limit & " OFFSET " & offset
-        
-        Return GetReservations(query)
-    End Function
-
+    ''' <summary>
+    ''' Gets all reservations (Buffered - Load All)
+    ''' </summary>
     Public Function GetAllReservations() As List(Of Reservation)
         Dim query As String = "SELECT r.ReservationID, r.CustomerID, r.FullName, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, c.Email, r.ContactNumber, r.AssignedStaffID, r.NumberOfGuests, r.EventDate, r.EventTime, r.EventType, r.ReservationStatus, r.ProductSelection, r.SpecialRequests, r.DeliveryAddress, r.DeliveryOption, COALESCE((SELECT SUM(TotalPrice) FROM reservation_items WHERE ReservationID = r.ReservationID), 0) AS TotalPrice " &
                               "FROM reservations r " &
                               "LEFT JOIN customers c ON r.CustomerID = c.CustomerID " &
-                              "ORDER BY r.ReservationID DESC LIMIT 50"
+                              "ORDER BY r.ReservationID DESC"
         
         Return GetReservations(query)
     End Function
 
     ''' <summary>
-    ''' Async version of GetAllReservations
+    ''' Gets today's reservations (Buffered - Load All)
     ''' </summary>
+    Public Function GetTodayReservations() As List(Of Reservation)
+         Dim query As String = "SELECT r.ReservationID, r.CustomerID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, " &
+                                "c.Email, r.ContactNumber, r.NumberOfGuests, r.EventDate, r.EventTime, r.EventType, " &
+                                "r.ReservationStatus " &
+                                "FROM reservations r LEFT JOIN customers c ON r.CustomerID = c.CustomerID " &
+                                "WHERE DATE(r.EventDate) = CURDATE() AND r.ReservationStatus IN ('Accepted', 'Confirmed') " &
+                                "ORDER BY r.EventDate ASC, r.EventTime ASC"
+        Return GetReservations(query)
+    End Function
+
+    ' Legacy support for paginated calls - Redirects to buffered list
+    Public Function GetTodayReservationsPaged(limit As Integer, offset As Integer) As List(Of Reservation)
+        Return GetTodayReservations()
+    End Function
+
+    Public Function GetAllReservationsPaged(limit As Integer, offset As Integer) As List(Of Reservation)
+        Return GetAllReservations()
+    End Function
+
     Public Async Function GetAllReservationsAsync() As Task(Of List(Of Reservation))
         Return Await Task.Run(Function() GetAllReservations())
     End Function
 
-    ''' <summary>
-    ''' Gets reservations with pagination support
-    ''' </summary>
-    Public Function GetAllReservationsPaged(limit As Integer, offset As Integer) As List(Of Reservation)
-        Dim query As String = "SELECT r.ReservationID, r.CustomerID, r.FullName, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, c.Email, r.ContactNumber, r.AssignedStaffID, r.NumberOfGuests, r.EventDate, r.EventTime, r.EventType, r.ReservationStatus, r.ProductSelection, r.SpecialRequests, r.DeliveryAddress, r.DeliveryOption, COALESCE((SELECT SUM(TotalPrice) FROM reservation_items WHERE ReservationID = r.ReservationID), 0) AS TotalPrice " &
-                              "FROM reservations r " &
-                              "LEFT JOIN customers c ON r.CustomerID = c.CustomerID " &
-                              "ORDER BY r.ReservationID DESC LIMIT " & limit & " OFFSET " & offset
-        
-        Return GetReservations(query)
+    Public Async Function GetTodayReservationsPagedAsync(limit As Integer, offset As Integer) As Task(Of List(Of Reservation))
+        Return Await Task.Run(Function() GetTodayReservations())
     End Function
 
-    ''' <summary>
-    ''' Gets total count of reservations for pagination
-    ''' </summary>
-    Public Function GetTotalReservationsCount() As Integer
-        Dim query As String = "SELECT COUNT(*) FROM reservations"
-        Dim result As Object = modDB.ExecuteScalar(query)
-        If result IsNot Nothing AndAlso IsNumeric(result) Then
-            Return CInt(result)
-        End If
-        Return 0
-    End Function
-
-    ''' <summary>
-    ''' Gets total count of today's accepted/confirmed reservations
-    ''' </summary>
     Public Function GetTotalTodayReservationsCount() As Integer
         Dim query As String = "SELECT COUNT(*) FROM reservations WHERE DATE(EventDate) = CURDATE() AND ReservationStatus IN ('Accepted', 'Confirmed')"
         Dim result As Object = modDB.ExecuteScalar(query)
@@ -72,20 +54,9 @@ Public Class ReservationRepository
         Return 0
     End Function
 
-    ''' <summary>
-    ''' Async version of GetTodayReservationsPaged
-    ''' </summary>
-    Public Async Function GetTodayReservationsPagedAsync(limit As Integer, offset As Integer) As Task(Of List(Of Reservation))
-        Return Await Task.Run(Function() GetTodayReservationsPaged(limit, offset))
-    End Function
-
-    ''' <summary>
-    ''' Async version of GetTotalTodayReservationsCount
-    ''' </summary>
     Public Async Function GetTotalTodayReservationsCountAsync() As Task(Of Integer)
         Return Await Task.Run(Function() GetTotalTodayReservationsCount())
     End Function
-
 
     Private Function GetReservations(query As String) As List(Of Reservation)
         Dim reservations As New List(Of Reservation)
@@ -93,13 +64,12 @@ Public Class ReservationRepository
         
         If table IsNot Nothing Then
             For Each row As DataRow In table.Rows
-                Dim res As New Reservation With {
-                    .ReservationID = Convert.ToInt32(row("ReservationID")),
-                    .CustomerName = If(IsDBNull(row("CustomerName")), "Unknown", row("CustomerName").ToString()),
-                    .EventTime = CType(row("EventTime"), TimeSpan),
-                    .NumberOfGuests = Convert.ToInt32(row("NumberOfGuests")),
-                    .ReservationStatus = row("ReservationStatus").ToString()
-                }
+                Dim res As New Reservation()
+                res.ReservationID = Convert.ToInt32(row("ReservationID"))
+                res.CustomerName = If(IsDBNull(row("CustomerName")), "Unknown", row("CustomerName").ToString())
+                res.EventTime = CType(row("EventTime"), TimeSpan)
+                res.NumberOfGuests = Convert.ToInt32(row("NumberOfGuests"))
+                res.ReservationStatus = row("ReservationStatus").ToString()
                 
                 ' Optional fields depending on query
                 If table.Columns.Contains("CustomerID") Then res.CustomerID = Convert.ToInt32(row("CustomerID"))
@@ -114,6 +84,7 @@ Public Class ReservationRepository
                 If table.Columns.Contains("DeliveryAddress") Then res.DeliveryAddress = If(IsDBNull(row("DeliveryAddress")), "", row("DeliveryAddress").ToString())
                 If table.Columns.Contains("DeliveryOption") Then res.DeliveryOption = If(IsDBNull(row("DeliveryOption")), "", row("DeliveryOption").ToString())
                 If table.Columns.Contains("TotalPrice") Then res.TotalPrice = Convert.ToDecimal(row("TotalPrice"))
+                If table.Columns.Contains("PrepTime") Then res.PrepTime = Convert.ToInt32(row("PrepTime"))
                 
                 reservations.Add(res)
             Next
@@ -123,10 +94,6 @@ Public Class ReservationRepository
     End Function
 
     Public Function CreateReservation(reservation As Reservation) As Integer
-        ' First ensure customer exists (simplified logic, ideally should be in CustomerRepository)
-        ' For now, we assume the CustomerID is already resolved or we use the helper in Database class
-        
-        ' Auto-generate ProductSelection string if missing but items exist
         If String.IsNullOrEmpty(reservation.ProductSelection) AndAlso reservation.Items IsNot Nothing AndAlso reservation.Items.Count > 0 Then
             Dim parts As New List(Of String)
             For Each item In reservation.Items
@@ -159,12 +126,10 @@ Public Class ReservationRepository
             If newID IsNot Nothing AndAlso IsNumeric(newID) Then
                 Dim reservationID As Integer = CInt(newID)
                 
-                ' Save items
                 For Each item In reservation.Items
                     AddReservationItem(reservationID, item)
                 Next
                 
-                ' Deduct inventory if confirmed or accepted
                 If reservation.ReservationStatus = "Confirmed" OrElse reservation.ReservationStatus = "Accepted" Then
                     Try
                         Dim inventoryService As New InventoryService()
@@ -202,7 +167,6 @@ Public Class ReservationRepository
         
         Dim success As Boolean = modDB.ExecuteNonQuery(query, parameters) > 0
         
-        ' If status changed to Confirmed or Accepted, deduct inventory
         If success AndAlso (status = "Confirmed" OrElse status = "Accepted") Then
             Try
                 Dim inventoryService As New InventoryService()

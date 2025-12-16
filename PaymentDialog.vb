@@ -33,7 +33,7 @@ Public Class PaymentDialog
 
         ' Initialize UI
         lblTotalAmount.Text = $"₱{_totalAmount:N2}"
-        cmbPaymentMethod.Items.AddRange({"CASH", "GCASH"})
+        cmbPaymentMethod.Items.AddRange({"CASH"})
         cmbPaymentMethod.SelectedIndex = 0
         txtAmountGiven.Text = ""
         lblChange.Text = "₱0.00"

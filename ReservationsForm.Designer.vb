@@ -27,14 +27,12 @@ Partial Class ReservationsForm
         pnlHeader = New Panel()
         lblSubHeader = New Label()
         lblHeader = New Label()
-        Panel1 = New Panel()
-        btnRefresh = New Button()
-        PictureBox1 = New PictureBox()
-        btnNewReservation = New Button()
+        TableLayoutPanel2 = New TableLayoutPanel()
+        Panel2 = New Panel()
         ResTemplate = New Panel()
         PictureBox8 = New PictureBox()
-        Button2 = New Button()
-        Button1 = New Button()
+        Button3 = New Button()
+        Button4 = New Button()
         PictureBox7 = New PictureBox()
         PictureBox6 = New PictureBox()
         PictureBox5 = New PictureBox()
@@ -49,10 +47,13 @@ Partial Class ReservationsForm
         lblTime2 = New Label()
         lblEvent2 = New Label()
         lblCompleted = New Label()
+        Panel1 = New Panel()
+        btnRefresh = New Button()
+        btnNewReservation = New Button()
         TableLayoutPanel1.SuspendLayout()
         pnlHeader.SuspendLayout()
-        Panel1.SuspendLayout()
-        CType(PictureBox1, ComponentModel.ISupportInitialize).BeginInit()
+        TableLayoutPanel2.SuspendLayout()
+        Panel2.SuspendLayout()
         ResTemplate.SuspendLayout()
         CType(PictureBox8, ComponentModel.ISupportInitialize).BeginInit()
         CType(PictureBox7, ComponentModel.ISupportInitialize).BeginInit()
@@ -60,23 +61,24 @@ Partial Class ReservationsForm
         CType(PictureBox5, ComponentModel.ISupportInitialize).BeginInit()
         CType(PictureBox4, ComponentModel.ISupportInitialize).BeginInit()
         CType(PictureBox3, ComponentModel.ISupportInitialize).BeginInit()
+        Panel1.SuspendLayout()
         SuspendLayout()
         ' 
         ' TableLayoutPanel1
         ' 
         TableLayoutPanel1.BackColor = Color.White
         TableLayoutPanel1.ColumnCount = 1
-        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        TableLayoutPanel1.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100F))
         TableLayoutPanel1.Controls.Add(pnlHeader, 0, 0)
-        TableLayoutPanel1.Controls.Add(Panel1, 0, 1)
+        TableLayoutPanel1.Controls.Add(TableLayoutPanel2, 0, 1)
         TableLayoutPanel1.Dock = DockStyle.Fill
         TableLayoutPanel1.Location = New Point(0, 0)
         TableLayoutPanel1.Name = "TableLayoutPanel1"
         TableLayoutPanel1.Padding = New Padding(24)
         TableLayoutPanel1.RowCount = 2
         TableLayoutPanel1.RowStyles.Add(New RowStyle())
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 20.0F))
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Percent, 100F))
+        TableLayoutPanel1.RowStyles.Add(New RowStyle(SizeType.Absolute, 20F))
         TableLayoutPanel1.Size = New Size(1789, 819)
         TableLayoutPanel1.TabIndex = 0
         ' 
@@ -95,7 +97,7 @@ Partial Class ReservationsForm
         ' lblSubHeader
         ' 
         lblSubHeader.AutoSize = True
-        lblSubHeader.Font = New Font("Segoe UI", 10.0F)
+        lblSubHeader.Font = New Font("Segoe UI", 10F)
         lblSubHeader.ForeColor = Color.FromArgb(CByte(85), CByte(85), CByte(85))
         lblSubHeader.Location = New Point(0, 45)
         lblSubHeader.Margin = New Padding(0)
@@ -107,7 +109,7 @@ Partial Class ReservationsForm
         ' lblHeader
         ' 
         lblHeader.AutoSize = True
-        lblHeader.Font = New Font("Segoe UI", 18.0F, FontStyle.Bold)
+        lblHeader.Font = New Font("Segoe UI", 18F, FontStyle.Bold)
         lblHeader.ForeColor = Color.Black
         lblHeader.Location = New Point(0, 0)
         lblHeader.Margin = New Padding(0)
@@ -116,70 +118,39 @@ Partial Class ReservationsForm
         lblHeader.TabIndex = 0
         lblHeader.Text = "Manage Reservations"
         ' 
-        ' Panel1
+        ' TableLayoutPanel2
         ' 
-        Panel1.AutoScroll = True
-        Panel1.BackColor = SystemColors.Window
-        Panel1.Controls.Add(btnRefresh)
-        Panel1.Controls.Add(PictureBox1)
-        Panel1.Controls.Add(btnNewReservation)
-        Panel1.Controls.Add(ResTemplate)
-        Panel1.Dock = DockStyle.Fill
-        Panel1.Location = New Point(27, 111)
-        Panel1.Name = "Panel1"
-        Panel1.Size = New Size(1735, 681)
-        Panel1.TabIndex = 2
+        TableLayoutPanel2.ColumnCount = 1
+        TableLayoutPanel2.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100F))
+        TableLayoutPanel2.Controls.Add(Panel2, 0, 1)
+        TableLayoutPanel2.Controls.Add(Panel1, 0, 0)
+        TableLayoutPanel2.Dock = DockStyle.Fill
+        TableLayoutPanel2.Location = New Point(27, 111)
+        TableLayoutPanel2.Name = "TableLayoutPanel2"
+        TableLayoutPanel2.RowCount = 2
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 15F))
+        TableLayoutPanel2.RowStyles.Add(New RowStyle(SizeType.Percent, 85F))
+        TableLayoutPanel2.Size = New Size(1735, 681)
+        TableLayoutPanel2.TabIndex = 2
         ' 
-        ' btnRefresh
+        ' Panel2
         ' 
-        btnRefresh.BackColor = Color.FromArgb(CByte(52), CByte(152), CByte(219))
-        btnRefresh.FlatAppearance.BorderColor = Color.Black
-        btnRefresh.FlatAppearance.MouseDownBackColor = Color.FromArgb(CByte(250), CByte(186), CByte(142))
-        btnRefresh.FlatStyle = FlatStyle.Flat
-        btnRefresh.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
-        btnRefresh.ForeColor = Color.White
-        btnRefresh.Location = New Point(1122, 33)
-        btnRefresh.Margin = New Padding(25)
-        btnRefresh.Name = "btnRefresh"
-        btnRefresh.Size = New Size(154, 46)
-        btnRefresh.TabIndex = 6
-        btnRefresh.Text = "Refresh"
-        btnRefresh.UseVisualStyleBackColor = False
-        ' 
-        ' PictureBox1
-        ' 
-        PictureBox1.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
-        PictureBox1.Image = My.Resources.Resources.plus__2_
-        PictureBox1.Location = New Point(1325, 40)
-        PictureBox1.Name = "PictureBox1"
-        PictureBox1.Size = New Size(32, 28)
-        PictureBox1.SizeMode = PictureBoxSizeMode.StretchImage
-        PictureBox1.TabIndex = 5
-        PictureBox1.TabStop = False
-        ' 
-        ' btnNewReservation
-        ' 
-        btnNewReservation.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
-        btnNewReservation.FlatAppearance.BorderColor = Color.Black
-        btnNewReservation.FlatAppearance.MouseDownBackColor = Color.FromArgb(CByte(250), CByte(186), CByte(142))
-        btnNewReservation.FlatStyle = FlatStyle.Flat
-        btnNewReservation.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
-        btnNewReservation.ForeColor = Color.White
-        btnNewReservation.Location = New Point(1308, 22)
-        btnNewReservation.Margin = New Padding(25)
-        btnNewReservation.Name = "btnNewReservation"
-        btnNewReservation.Size = New Size(228, 64)
-        btnNewReservation.TabIndex = 4
-        btnNewReservation.Text = "       New Reservation"
-        btnNewReservation.UseVisualStyleBackColor = False
+        Panel2.AutoScroll = True
+        Panel2.BackColor = SystemColors.Window
+        Panel2.Controls.Add(ResTemplate)
+        Panel2.Dock = DockStyle.Fill
+        Panel2.Location = New Point(3, 105)
+        Panel2.Name = "Panel2"
+        Panel2.Size = New Size(1729, 573)
+        Panel2.TabIndex = 4
         ' 
         ' ResTemplate
         ' 
         ResTemplate.BackColor = Color.White
         ResTemplate.BorderStyle = BorderStyle.FixedSingle
         ResTemplate.Controls.Add(PictureBox8)
-        ResTemplate.Controls.Add(Button2)
-        ResTemplate.Controls.Add(Button1)
+        ResTemplate.Controls.Add(Button3)
+        ResTemplate.Controls.Add(Button4)
         ResTemplate.Controls.Add(PictureBox7)
         ResTemplate.Controls.Add(PictureBox6)
         ResTemplate.Controls.Add(PictureBox5)
@@ -194,7 +165,7 @@ Partial Class ReservationsForm
         ResTemplate.Controls.Add(lblTime2)
         ResTemplate.Controls.Add(lblEvent2)
         ResTemplate.Controls.Add(lblCompleted)
-        ResTemplate.Location = New Point(38, 119)
+        ResTemplate.Location = New Point(-116, 119)
         ResTemplate.Name = "ResTemplate"
         ResTemplate.Size = New Size(420, 342)
         ResTemplate.TabIndex = 2
@@ -209,31 +180,31 @@ Partial Class ReservationsForm
         PictureBox8.TabIndex = 23
         PictureBox8.TabStop = False
         ' 
-        ' Button2
+        ' Button3
         ' 
-        Button2.BackColor = Color.White
-        Button2.FlatAppearance.BorderSize = 0
-        Button2.FlatStyle = FlatStyle.Flat
-        Button2.Font = New Font("Segoe UI Semibold", 9.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Button2.ForeColor = Color.Orange
-        Button2.Location = New Point(292, 18)
-        Button2.Name = "Button2"
-        Button2.Size = New Size(104, 38)
-        Button2.TabIndex = 21
-        Button2.Text = "Pending"
-        Button2.UseVisualStyleBackColor = False
+        Button3.BackColor = Color.White
+        Button3.FlatAppearance.BorderSize = 0
+        Button3.FlatStyle = FlatStyle.Flat
+        Button3.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Button3.ForeColor = Color.Orange
+        Button3.Location = New Point(292, 18)
+        Button3.Name = "Button3"
+        Button3.Size = New Size(104, 38)
+        Button3.TabIndex = 21
+        Button3.Text = "Pending"
+        Button3.UseVisualStyleBackColor = False
         ' 
-        ' Button1
+        ' Button4
         ' 
-        Button1.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
-        Button1.FlatStyle = FlatStyle.Flat
-        Button1.Font = New Font("Segoe UI Semibold", 9.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        Button1.Location = New Point(292, 285)
-        Button1.Name = "Button1"
-        Button1.Size = New Size(104, 38)
-        Button1.TabIndex = 20
-        Button1.Text = "View Orders"
-        Button1.UseVisualStyleBackColor = False
+        Button4.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
+        Button4.FlatStyle = FlatStyle.Flat
+        Button4.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        Button4.Location = New Point(292, 285)
+        Button4.Name = "Button4"
+        Button4.Size = New Size(104, 38)
+        Button4.TabIndex = 20
+        Button4.Text = "View Orders"
+        Button4.UseVisualStyleBackColor = False
         ' 
         ' PictureBox7
         ' 
@@ -288,7 +259,7 @@ Partial Class ReservationsForm
         ' lblName2
         ' 
         lblName2.AutoSize = True
-        lblName2.Font = New Font("Segoe UI", 12.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        lblName2.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         lblName2.Location = New Point(20, 20)
         lblName2.Name = "lblName2"
         lblName2.Size = New Size(173, 28)
@@ -298,7 +269,7 @@ Partial Class ReservationsForm
         ' lblCode2
         ' 
         lblCode2.AutoSize = True
-        lblCode2.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblCode2.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblCode2.ForeColor = Color.Gray
         lblCode2.Location = New Point(22, 50)
         lblCode2.Name = "lblCode2"
@@ -309,7 +280,7 @@ Partial Class ReservationsForm
         ' lblEmail
         ' 
         lblEmail.AutoSize = True
-        lblEmail.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblEmail.Font = New Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblEmail.Location = New Point(69, 87)
         lblEmail.Name = "lblEmail"
         lblEmail.Size = New Size(159, 23)
@@ -319,7 +290,7 @@ Partial Class ReservationsForm
         ' lblPhone2
         ' 
         lblPhone2.AutoSize = True
-        lblPhone2.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblPhone2.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblPhone2.Location = New Point(69, 130)
         lblPhone2.Name = "lblPhone2"
         lblPhone2.Size = New Size(97, 20)
@@ -329,7 +300,7 @@ Partial Class ReservationsForm
         ' lblPeople2
         ' 
         lblPeople2.AutoSize = True
-        lblPeople2.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblPeople2.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblPeople2.Location = New Point(69, 171)
         lblPeople2.Name = "lblPeople2"
         lblPeople2.Size = New Size(17, 20)
@@ -339,7 +310,7 @@ Partial Class ReservationsForm
         ' lblDate2
         ' 
         lblDate2.AutoSize = True
-        lblDate2.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblDate2.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblDate2.Location = New Point(69, 213)
         lblDate2.Name = "lblDate2"
         lblDate2.Size = New Size(85, 20)
@@ -349,7 +320,7 @@ Partial Class ReservationsForm
         ' lblTime2
         ' 
         lblTime2.AutoSize = True
-        lblTime2.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblTime2.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblTime2.Location = New Point(69, 249)
         lblTime2.Name = "lblTime2"
         lblTime2.Size = New Size(61, 20)
@@ -359,7 +330,7 @@ Partial Class ReservationsForm
         ' lblEvent2
         ' 
         lblEvent2.AutoSize = True
-        lblEvent2.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblEvent2.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblEvent2.Location = New Point(69, 290)
         lblEvent2.Name = "lblEvent2"
         lblEvent2.Size = New Size(85, 20)
@@ -373,16 +344,58 @@ Partial Class ReservationsForm
         lblCompleted.BackColor = Color.FromArgb(CByte(0), CByte(200), CByte(83))
         lblCompleted.Font = New Font("Segoe UI", 7.8F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         lblCompleted.ForeColor = Color.White
-        lblCompleted.Location = New Point(718, 25)
+        lblCompleted.Location = New Point(1154, 25)
         lblCompleted.Name = "lblCompleted"
         lblCompleted.Padding = New Padding(10, 3, 10, 3)
         lblCompleted.Size = New Size(105, 23)
         lblCompleted.TabIndex = 14
         lblCompleted.Text = "COMPLETED"
         ' 
+        ' Panel1
+        ' 
+        Panel1.Controls.Add(btnRefresh)
+        Panel1.Controls.Add(btnNewReservation)
+        Panel1.Dock = DockStyle.Fill
+        Panel1.Location = New Point(3, 3)
+        Panel1.Name = "Panel1"
+        Panel1.Size = New Size(1729, 96)
+        Panel1.TabIndex = 0
+        ' 
+        ' btnRefresh
+        ' 
+        btnRefresh.BackColor = Color.FromArgb(CByte(52), CByte(152), CByte(219))
+        btnRefresh.FlatAppearance.BorderColor = Color.Black
+        btnRefresh.FlatAppearance.MouseDownBackColor = Color.FromArgb(CByte(250), CByte(186), CByte(142))
+        btnRefresh.FlatStyle = FlatStyle.Flat
+        btnRefresh.Font = New Font("Segoe UI", 10F, FontStyle.Bold)
+        btnRefresh.ForeColor = Color.White
+        btnRefresh.Location = New Point(1064, 30)
+        btnRefresh.Margin = New Padding(25)
+        btnRefresh.Name = "btnRefresh"
+        btnRefresh.Size = New Size(154, 46)
+        btnRefresh.TabIndex = 8
+        btnRefresh.Text = "Refresh"
+        btnRefresh.UseVisualStyleBackColor = False
+        ' 
+        ' btnNewReservation
+        ' 
+        btnNewReservation.BackColor = Color.FromArgb(CByte(255), CByte(127), CByte(39))
+        btnNewReservation.FlatAppearance.BorderColor = Color.Black
+        btnNewReservation.FlatAppearance.MouseDownBackColor = Color.FromArgb(CByte(250), CByte(186), CByte(142))
+        btnNewReservation.FlatStyle = FlatStyle.Flat
+        btnNewReservation.Font = New Font("Segoe UI", 10F, FontStyle.Bold)
+        btnNewReservation.ForeColor = Color.White
+        btnNewReservation.Location = New Point(1250, 19)
+        btnNewReservation.Margin = New Padding(25)
+        btnNewReservation.Name = "btnNewReservation"
+        btnNewReservation.Size = New Size(228, 64)
+        btnNewReservation.TabIndex = 7
+        btnNewReservation.Text = "       New Reservation"
+        btnNewReservation.UseVisualStyleBackColor = False
+        ' 
         ' ReservationsForm
         ' 
-        AutoScaleDimensions = New SizeF(8.0F, 20.0F)
+        AutoScaleDimensions = New SizeF(8F, 20F)
         AutoScaleMode = AutoScaleMode.Font
         BackColor = Color.FromArgb(CByte(248), CByte(248), CByte(252))
         ClientSize = New Size(1789, 819)
@@ -394,8 +407,8 @@ Partial Class ReservationsForm
         TableLayoutPanel1.PerformLayout()
         pnlHeader.ResumeLayout(False)
         pnlHeader.PerformLayout()
-        Panel1.ResumeLayout(False)
-        CType(PictureBox1, ComponentModel.ISupportInitialize).EndInit()
+        TableLayoutPanel2.ResumeLayout(False)
+        Panel2.ResumeLayout(False)
         ResTemplate.ResumeLayout(False)
         ResTemplate.PerformLayout()
         CType(PictureBox8, ComponentModel.ISupportInitialize).EndInit()
@@ -404,6 +417,7 @@ Partial Class ReservationsForm
         CType(PictureBox5, ComponentModel.ISupportInitialize).EndInit()
         CType(PictureBox4, ComponentModel.ISupportInitialize).EndInit()
         CType(PictureBox3, ComponentModel.ISupportInitialize).EndInit()
+        Panel1.ResumeLayout(False)
         ResumeLayout(False)
     End Sub
 
@@ -411,8 +425,20 @@ Partial Class ReservationsForm
     Friend WithEvents pnlHeader As Panel
     Friend WithEvents lblSubHeader As Label
     Friend WithEvents lblHeader As Label
+    Friend WithEvents TableLayoutPanel2 As TableLayoutPanel
     Friend WithEvents Panel1 As Panel
+    Friend WithEvents btnRefresh As Button
+    Friend WithEvents btnNewReservation As Button
+    Friend WithEvents Panel2 As Panel
     Private WithEvents ResTemplate As Panel
+    Friend WithEvents PictureBox8 As PictureBox
+    Friend WithEvents Button3 As Button
+    Friend WithEvents Button4 As Button
+    Friend WithEvents PictureBox7 As PictureBox
+    Friend WithEvents PictureBox6 As PictureBox
+    Friend WithEvents PictureBox5 As PictureBox
+    Friend WithEvents PictureBox4 As PictureBox
+    Friend WithEvents PictureBox3 As PictureBox
     Private WithEvents lblName2 As Label
     Private WithEvents lblCode2 As Label
     Private WithEvents lblEmail As Label
@@ -422,16 +448,5 @@ Partial Class ReservationsForm
     Private WithEvents lblTime2 As Label
     Private WithEvents lblEvent2 As Label
     Private WithEvents lblCompleted As Label
-    Friend WithEvents PictureBox1 As PictureBox
-    Friend WithEvents btnNewReservation As Button
-    Friend WithEvents PictureBox3 As PictureBox
-    Friend WithEvents PictureBox6 As PictureBox
-    Friend WithEvents PictureBox5 As PictureBox
-    Friend WithEvents PictureBox4 As PictureBox
-    Friend WithEvents Button1 As Button
-    Friend WithEvents PictureBox7 As PictureBox
-    Friend WithEvents Button2 As Button
-    Friend WithEvents PictureBox8 As PictureBox
-    Friend WithEvents btnRefresh As Button
 End Class
 
